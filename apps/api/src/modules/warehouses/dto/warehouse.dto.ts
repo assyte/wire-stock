@@ -1,5 +1,5 @@
-import { IsString, IsOptional, IsBoolean, MinLength, MaxLength } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsString, IsOptional, IsBoolean, MinLength, MaxLength } from 'class-validator';
 
 export class CreateWarehouseDto {
   @ApiProperty({ example: 'Ana Depo' })

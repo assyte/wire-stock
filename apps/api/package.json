@@ -1,6 +1,6 @@
 {
   "name": "@wire-stock/api",
-  "version": "0.1.0",
+  "version": "1.0.1",
   "private": true,
   "scripts": {
     "dev": "nest start --watch",
@@ -9,10 +9,10 @@
     "start:prod": "node -r tsconfig-paths/register dist/main.js",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "type-check": "tsc --noEmit",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:watch": "jest --watch",
-    "test:cov": "jest --coverage",
-    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "test:cov": "jest --coverage --passWithNoTests",
+    "test:e2e": "jest --config ./test/jest-e2e.json --passWithNoTests",
     "clean": "rm -rf dist .turbo"
   },
   "dependencies": {

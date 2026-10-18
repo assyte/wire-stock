@@ -1,10 +1,10 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { ConfigService } from '@nestjs/config';
 
-import { PrismaService } from '@/common/prisma/prisma.service';
 import { CurrentUserData } from '@/common/decorators/current-user.decorator';
+import { PrismaService } from '@/common/prisma/prisma.service';
 
 interface JwtPayload {
   sub: string;

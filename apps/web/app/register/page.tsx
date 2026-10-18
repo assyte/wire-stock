@@ -1,11 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import Link from 'next/link';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
 import {
   Eye,
   EyeOff,
@@ -19,14 +14,18 @@ import {
   Wrench,
   Package,
   Factory,
-  WrenchIcon as _Wrench,
 } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useAuthStore } from '@/stores/auth-store';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/auth-store';
 
 const registerSchema = z
   .object({
@@ -106,7 +105,7 @@ export default function RegisterPage() {
   const onSubmit = async (data: RegisterForm) => {
     setServerError(null);
     try {
-      const { confirmPassword, ...submitData } = data;
+      const { confirmPassword: _confirm, ...submitData } = data;
       await registerUser(submitData);
       router.push('/dashboard');
     } catch (error: any) {

@@ -4,7 +4,6 @@ import {
   Body,
   HttpCode,
   HttpStatus,
-  UseGuards,
   Get,
 } from '@nestjs/common';
 import {
@@ -14,6 +13,9 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 
+import { CurrentUser, CurrentUserData } from '@/common/decorators/current-user.decorator';
+import { Public } from '@/common/decorators/public.decorator';
+
 import { AuthService } from './auth.service';
 import {
   RegisterDto,
@@ -21,8 +23,6 @@ import {
   RefreshTokenDto,
   AuthResponseDto,
 } from './dto/auth.dto';
-import { Public } from '@/common/decorators/public.decorator';
-import { CurrentUser, CurrentUserData } from '@/common/decorators/current-user.decorator';
 
 @ApiTags('auth')
 @Controller('auth')

@@ -10,8 +10,8 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
-    project: './tsconfig.json',
-    tsconfigRootDir: __dirname,
+    // parserOptions.project her app'in kendi eslintrc.json'unda override edilmeli
+    project: null,
   },
   plugins: ['@typescript-eslint', 'import', 'unused-imports'],
   extends: [
@@ -25,7 +25,8 @@ module.exports = {
     'import/resolver': {
       typescript: {
         alwaysTryTypes: true,
-        project: './tsconfig.json',
+        // her app kendi tsconfig.json'unu kullanir
+        project: null,
       },
       node: {
         extensions: ['.js', '.jsx', '.ts', '.tsx'],

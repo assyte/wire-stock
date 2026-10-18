@@ -1,4 +1,4 @@
-import axios, { AxiosError, AxiosInstance, InternalAxiosRequestConfig } from 'axios';
+import axios, { type AxiosError, type AxiosInstance, type InternalAxiosRequestConfig } from 'axios';
 import { toast } from 'sonner';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api/v1';
@@ -54,7 +54,8 @@ api.interceptors.request.use(
 
 // Response interceptor - token refresh
 let isRefreshing = false;
-let failedQueue: Array<{ resolve: Function; reject: Function }> = [];
+type QueueCallback = (token: string | null) => void;
+let failedQueue: Array<{ resolve: QueueCallback; reject: (reason?: unknown) => void }> = [];
 
 const processQueue = (error: any, token: string | null = null) => {
   failedQueue.forEach((prom) => {

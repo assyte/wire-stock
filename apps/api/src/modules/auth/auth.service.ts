@@ -4,12 +4,13 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 import { UserRole, Plan, Prisma } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
 
 import { PrismaService } from '@/common/prisma/prisma.service';
+
 import { RegisterDto, LoginDto } from './dto/auth.dto';
 
 interface JwtPayload {

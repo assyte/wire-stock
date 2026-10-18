@@ -1,8 +1,5 @@
 'use client';
 
-import { useState } from 'react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard,
   Package,
@@ -23,9 +20,12 @@ import {
   Menu,
   X,
 } from 'lucide-react';
-import { useAuthStore } from '@/stores/auth-store';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState } from 'react';
+
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { useAuthStore } from '@/stores/auth-store';
 
 const navigation = [
   {

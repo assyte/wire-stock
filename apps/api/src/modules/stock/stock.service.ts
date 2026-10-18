@@ -3,8 +3,10 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { PrismaService } from '@/common/prisma/prisma.service';
 import { MovementType } from '@prisma/client';
+
+import { PrismaService } from '@/common/prisma/prisma.service';
+
 import {
   CreateStockMovementDto,
   StockAdjustmentDto,

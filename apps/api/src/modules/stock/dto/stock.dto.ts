@@ -1,7 +1,7 @@
-import { IsString, IsNumber, IsOptional, IsEnum, IsUUID, Min, IsObject } from 'class-validator';
-import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { MovementType } from '@prisma/client';
+import { Type } from 'class-transformer';
+import { IsString, IsNumber, IsOptional, IsEnum, Min } from 'class-validator';
 
 export class CreateStockMovementDto {
   @ApiProperty()

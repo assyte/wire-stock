@@ -1,8 +1,9 @@
 import { Controller, Get, Put, Body } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
-import { OrganizationsService } from './organizations.service';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+
+import { OrganizationsService } from './organizations.service';
 
 @ApiTags('organizations')
 @ApiBearerAuth('JWT-auth')

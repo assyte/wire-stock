@@ -8,9 +8,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
+
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/category.dto';
-import { CurrentUser } from '@/common/decorators/current-user.decorator';
 
 @ApiTags('categories')
 @ApiBearerAuth('JWT-auth')

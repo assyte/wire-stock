@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { cn, formatCurrency } from '@wire-stock/utils';
 import {
   Package,
   Warehouse,
@@ -12,12 +12,14 @@ import {
   ScanLine,
   Activity,
   DollarSign,
-  Truck,
 } from 'lucide-react';
-import { useAuthStore } from '@/stores/auth-store';
-import api from '@/lib/api';
-import { cn, formatCurrency, formatNumber } from '@wire-stock/utils';
+import { useEffect, useState } from 'react';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import api from '@/lib/api';
+import { useAuthStore } from '@/stores/auth-store';
+
+
 
 interface DashboardStats {
   totalProducts: number;
@@ -49,13 +51,22 @@ export default function DashboardPage() {
     fetchStats();
   }, []);
 
-  const statCards = [
+  type StatChangeType = 'up' | 'down' | 'warning';
+
+const statCards: Array<{
+  title: string;
+  value: string | number;
+  icon: any;
+  change: string;
+  changeType: StatChangeType;
+  color: 'brand' | 'accent' | 'warning' | 'info';
+}> = [
     {
       title: 'Toplam Ürün',
       value: stats?.totalProducts ?? 0,
       icon: Package,
       change: '+12%',
-      changeType: 'up' as const,
+      changeType: 'up',
       color: 'brand',
     },
     {
@@ -63,7 +74,7 @@ export default function DashboardPage() {
       value: formatCurrency(stats?.totalStockValue ?? 0),
       icon: DollarSign,
       change: '+8.2%',
-      changeType: 'up' as const,
+      changeType: 'up',
       color: 'accent',
     },
     {
@@ -71,7 +82,7 @@ export default function DashboardPage() {
       value: stats?.lowStockProducts ?? 0,
       icon: AlertTriangle,
       change: stats?.outOfStockProducts ? `${stats.outOfStockProducts} tükendi` : '',
-      changeType: 'warning' as const,
+      changeType: 'warning',
       color: 'warning',
     },
     {
@@ -79,7 +90,7 @@ export default function DashboardPage() {
       value: stats?.totalCustomers ?? 0,
       icon: Users,
       change: '+5%',
-      changeType: 'up' as const,
+      changeType: 'up',
       color: 'info',
     },
   ];

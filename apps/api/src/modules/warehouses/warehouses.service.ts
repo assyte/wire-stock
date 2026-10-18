@@ -4,7 +4,9 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+
 import { PrismaService } from '@/common/prisma/prisma.service';
+
 import { CreateWarehouseDto, UpdateWarehouseDto, CreateShelfDto } from './dto/warehouse.dto';
 
 @Injectable()
@@ -110,7 +112,8 @@ export class WarehousesService {
   }
 
   async remove(organizationId: string, id: string) {
-    const warehouse = await this.findOne(organizationId, id);
+    // existence check (findOne throws NotFound if missing)
+    await this.findOne(organizationId, id);
 
     // Stok hareketi var mı kontrol et
     const movementCount = await this.prisma.stockMovement.count({

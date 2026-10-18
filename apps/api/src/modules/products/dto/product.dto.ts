@@ -1,3 +1,5 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 import {
   IsString,
   IsNumber,
@@ -6,11 +8,8 @@ import {
   MinLength,
   MaxLength,
   Min,
-  IsUUID,
   IsObject,
 } from 'class-validator';
-import { Type } from 'class-transformer';
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateProductDto {
   @ApiProperty({ example: 'NYM-3X2.5' })

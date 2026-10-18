@@ -9,13 +9,15 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { UserRole } from '@prisma/client';
 
-import { UsersService } from './users.service';
-import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 import { Roles } from '@/common/decorators/roles.decorator';
 import { RolesGuard } from '@/common/guards/roles.guard';
-import { UserRole } from '@prisma/client';
+
+import { CreateUserDto, UpdateUserDto } from './dto/user.dto';
+import { UsersService } from './users.service';
+
 
 @ApiTags('users')
 @ApiBearerAuth('JWT-auth')

@@ -11,9 +11,10 @@ import {
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
-import { ProductsService } from './products.service';
-import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
+
+import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
+import { ProductsService } from './products.service';
 
 @ApiTags('products')
 @ApiBearerAuth('JWT-auth')

@@ -6,7 +6,6 @@ import {
   Delete,
   Body,
   Param,
-  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -15,13 +14,14 @@ import {
   ApiBearerAuth,
 } from '@nestjs/swagger';
 
-import { WarehousesService } from './warehouses.service';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
+
 import {
   CreateWarehouseDto,
   UpdateWarehouseDto,
   CreateShelfDto,
 } from './dto/warehouse.dto';
-import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { WarehousesService } from './warehouses.service';
 
 @ApiTags('warehouses')
 @ApiBearerAuth('JWT-auth')

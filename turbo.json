@@ -1,16 +1,5 @@
 {
-  "$schema": "https://turbo.build/schema.json",
-  "globalDependencies": ["**/.env.*local"],
-  "globalEnv": [
-    "NODE_ENV",
-    "DATABASE_URL",
-    "REDIS_URL",
-    "JWT_SECRET",
-    "JWT_REFRESH_SECRET",
-    "NEXT_PUBLIC_API_URL",
-    "API_URL"
-  ],
-  "tasks": {
+  "pipeline": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".next/**", "!.next/cache/**", "dist/**"],
@@ -21,7 +10,6 @@
       "persistent": true
     },
     "lint": {
-      "dependsOn": ["^build"],
       "outputs": []
     },
     "start": {
@@ -31,9 +19,21 @@
     "clean": {
       "cache": false
     },
+    "type-check": {
+      "outputs": []
+    },
     "test": {
-      "dependsOn": ["^build"],
       "outputs": ["coverage/**"]
     }
-  }
+  },
+  "globalDependencies": ["**/.env.*local"],
+  "globalEnv": [
+    "NODE_ENV",
+    "DATABASE_URL",
+    "REDIS_URL",
+    "JWT_SECRET",
+    "JWT_REFRESH_SECRET",
+    "NEXT_PUBLIC_API_URL",
+    "API_URL"
+  ]
 }

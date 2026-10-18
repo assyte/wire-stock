@@ -9,13 +9,14 @@ import {
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { MovementType } from '@prisma/client';
 
-import { StockService } from './stock.service';
+import { CurrentUser } from '@/common/decorators/current-user.decorator';
+
 import {
   CreateStockMovementDto,
   StockAdjustmentDto,
   StockTransferDto,
 } from './dto/stock.dto';
-import { CurrentUser } from '@/common/decorators/current-user.decorator';
+import { StockService } from './stock.service';
 
 @ApiTags('stock')
 @ApiBearerAuth('JWT-auth')

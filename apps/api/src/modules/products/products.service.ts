@@ -4,8 +4,10 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { Prisma, PrismaClient } from '@prisma/client';
+import { Prisma } from '@prisma/client';
+
 import { PrismaService } from '@/common/prisma/prisma.service';
+
 import { CreateProductDto, UpdateProductDto } from './dto/product.dto';
 
 @Injectable()
@@ -72,7 +74,7 @@ export class ProductsService {
         (sum, level) => sum + Number(level.quantity),
         0,
       );
-      const { stockLevels, ...rest } = product;
+      const { stockLevels: _sl, ...rest } = product;
       return { ...rest, totalStock };
     });
 

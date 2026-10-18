@@ -1,9 +1,10 @@
 'use client';
 
+import { toast } from 'sonner';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+
 import api, { tokenStorage } from '@/lib/api';
-import { toast } from 'sonner';
 
 export interface User {
   id: string;

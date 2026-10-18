@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import {
   Zap,
   Package,
@@ -17,6 +16,7 @@ import {
   ScanLine,
   FileText,
 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function HomePage() {
   return (
