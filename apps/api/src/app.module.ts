@@ -10,9 +10,11 @@ import configuration from './config/configuration';
 import { validationSchema } from './config/validation.schema';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { CustomersModule } from './modules/customers/customers.module';
 import { HealthModule } from './modules/health/health.module';
 import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { ProductsModule } from './modules/products/products.module';
+import { SalesModule } from './modules/sales/sales.module';
 import { StockModule } from './modules/stock/stock.module';
 import { UsersModule } from './modules/users/users.module';
 import { WarehousesModule } from './modules/warehouses/warehouses.module';
@@ -57,6 +59,8 @@ import { WarehousesModule } from './modules/warehouses/warehouses.module';
     CategoriesModule,
     ProductsModule,
     StockModule,
+    CustomersModule,
+    SalesModule,
     HealthModule,
   ],
   providers: [
