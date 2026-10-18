@@ -16,6 +16,8 @@ import { OrganizationsModule } from './modules/organizations/organizations.modul
 import { ProductsModule } from './modules/products/products.module';
 import { SalesModule } from './modules/sales/sales.module';
 import { StockModule } from './modules/stock/stock.module';
+import { SuppliersModule } from './modules/suppliers/suppliers.module';
+import { UnitsModule } from './modules/units/units.module';
 import { UsersModule } from './modules/users/users.module';
 import { WarehousesModule } from './modules/warehouses/warehouses.module';
 
@@ -57,9 +59,11 @@ import { WarehousesModule } from './modules/warehouses/warehouses.module';
     OrganizationsModule,
     WarehousesModule,
     CategoriesModule,
+    UnitsModule,
     ProductsModule,
     StockModule,
     CustomersModule,
+    SuppliersModule,
     SalesModule,
     HealthModule,
   ],

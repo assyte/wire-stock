@@ -24,6 +24,8 @@ export const tokenStorage = {
   setAccessToken: (token: string) => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(TOKEN_KEY, token);
+    // Middleware'in server-side kontrolu icin cookie de yaz (7 günlük)
+    document.cookie = `access_token=${encodeURIComponent(token)}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
   },
   getRefreshToken: () => {
     if (typeof window === 'undefined') return null;
@@ -32,11 +34,14 @@ export const tokenStorage = {
   setRefreshToken: (token: string) => {
     if (typeof window === 'undefined') return;
     localStorage.setItem(REFRESH_TOKEN_KEY, token);
+    document.cookie = `refresh_token=${encodeURIComponent(token)}; path=/; max-age=${7 * 24 * 60 * 60}; SameSite=Lax`;
   },
   clear: () => {
     if (typeof window === 'undefined') return;
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(REFRESH_TOKEN_KEY);
+    document.cookie = 'access_token=; path=/; max-age=0';
+    document.cookie = 'refresh_token=; path=/; max-age=0';
   },
 };
 

@@ -210,8 +210,15 @@ export class AuthService {
         throw new UnauthorizedException('Kullanıcı bulunamadı');
       }
 
+      // Eski refresh token'ı session tablosundan sil (rotation)
+      // Token unique olduğu için aynı token'la tekrar session yaratılırsa conflict olur
+      await this.prisma.session.deleteMany({
+        where: { token: refreshToken },
+      });
+
       return this.generateTokens(user.id, user.email, user.organizationId, user.role);
     } catch (error) {
+      if (error instanceof UnauthorizedException) throw error;
       throw new UnauthorizedException('Geçersiz veya süresi dolmuş token');
     }
   }

@@ -7,7 +7,6 @@ import {
   Body,
   Param,
   Query,
-  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
@@ -30,12 +29,16 @@ export class CustomersController {
   @ApiQuery({ name: 'isActive', required: false })
   async findAll(
     @CurrentUser('organizationId') organizationId: string,
-    @Query('page', new ParseIntPipe({ optional: true })) page?: number,
-    @Query('pageSize', new ParseIntPipe({ optional: true })) pageSize?: number,
+    @Query('page') pageRaw?: string,
+    @Query('pageSize') pageSizeRaw?: string,
     @Query('search') search?: string,
     @Query('isActive') isActive?: string,
   ) {
+    const page = pageRaw ? parseInt(pageRaw, 10) : undefined;
+    const pageSize = pageSizeRaw ? parseInt(pageSizeRaw, 10) : undefined;
     return this.customersService.findAll(organizationId, {
+      page,
+      pageSize,
       search,
       isActive: isActive === undefined ? undefined : isActive === 'true',
     });

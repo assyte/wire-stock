@@ -4,6 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '@/common/prisma/prisma.service';
 
@@ -13,28 +14,43 @@ import { CreateCustomerDto, UpdateCustomerDto } from './dto/customer.dto';
 export class CustomersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(organizationId: string, options: { search?: string; isActive?: boolean } = {}) {
-    const { search, isActive } = options;
+  async findAll(
+    organizationId: string,
+    options: { page?: number; pageSize?: number; search?: string; isActive?: boolean } = {},
+  ) {
+    const { page = 1, pageSize = 50, search, isActive } = options;
 
-    return this.prisma.customer.findMany({
-      where: {
-        organizationId,
-        deletedAt: null,
-        ...(search && {
-          OR: [
-            { name: { contains: search, mode: 'insensitive' } },
-            { code: { contains: search, mode: 'insensitive' } },
-            { phone: { contains: search, mode: 'insensitive' } },
-            { taxNumber: { contains: search, mode: 'insensitive' } },
-          ],
-        }),
-        ...(isActive !== undefined && { isActive }),
-      },
-      include: {
-        _count: { select: { salesOrders: true, projects: true } },
-      },
-      orderBy: { name: 'asc' },
-    });
+    const where: Prisma.CustomerWhereInput = {
+      organizationId,
+      deletedAt: null,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: Prisma.QueryMode.insensitive } as any },
+          { code: { contains: search, mode: Prisma.QueryMode.insensitive } as any },
+          { phone: { contains: search, mode: Prisma.QueryMode.insensitive } as any },
+          { taxNumber: { contains: search, mode: Prisma.QueryMode.insensitive } as any },
+        ],
+      }),
+      ...(isActive !== undefined && { isActive }),
+    };
+
+    const [items, total] = await Promise.all([
+      this.prisma.customer.findMany({
+        where,
+        include: {
+          _count: { select: { salesOrders: true, projects: true } },
+        },
+        orderBy: { name: 'asc' },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.customer.count({ where }),
+    ]);
+
+    return {
+      items,
+      meta: { page, pageSize, total, totalPages: Math.ceil(total / pageSize) },
+    };
   }
 
   async findOne(organizationId: string, id: string) {

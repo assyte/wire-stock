@@ -34,6 +34,7 @@ interface Product {
   totalStock?: number;
   category?: { id: string; name: string; color?: string };
   unit?: { id: string; name: string; shortName: string };
+  brand?: { id: string; name: string } | null;
 }
 
 interface Category {
@@ -41,20 +42,22 @@ interface Category {
   name: string;
 }
 
-// Yaygın birimler (seed.ts ile uyumlu) — v1.0.5'te units API eklenecek
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _COMMON_UNITS: Array<{ name: string; shortName: string; id?: string }> = [
-  { name: 'Adet', shortName: 'ad' },
-  { name: 'Metre', shortName: 'm' },
-  { name: 'Kilogram', shortName: 'kg' },
-  { name: 'Litre', shortName: 'lt' },
-  { name: 'Rulo', shortName: 'rl' },
-  { name: 'Kutu', shortName: 'kt' },
-];
+interface Unit {
+  id: string;
+  name: string;
+  shortName: string;
+}
+
+interface Brand {
+  id: string;
+  name: string;
+}
 
 export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [units, setUnits] = useState<Unit[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Filters
@@ -80,7 +83,8 @@ export default function ProductsPage() {
     name: '',
     description: '',
     categoryId: '',
-    unitShortName: 'ad',
+    unitId: '',
+    brandId: '',
     purchasePrice: 0,
     salePrice: 0,
     vatRate: 20,
@@ -88,10 +92,18 @@ export default function ProductsPage() {
     criticalStock: 0,
   });
 
-  const fetchCategories = async () => {
+  const fetchRefs = async () => {
     try {
-      const { data } = await api.get('/categories');
-      setCategories(data.data);
+      const [catsRes, unitsRes, brandsRes] = await Promise.all([
+        api.get('/categories'),
+        api.get('/units'),
+        api.get('/suppliers'), // marka listesi yoksa suppliers'tan çekeceğiz
+      ]);
+      setCategories(catsRes.data.data ?? catsRes.data.data?.items ?? []);
+      setUnits(unitsRes.data.data ?? unitsRes.data.data?.items ?? []);
+      // Marka listesi customers/suppliers endpointinden farklı. Suppliers'ı buraya alıyoruz ki brand yerine.
+      // v1.0.6'da brands endpoint'i eklenince değişecek
+      setBrands(brandsRes.data.data?.items ?? brandsRes.data.data ?? []);
     } catch {
       // sessizce yoksay
     }
@@ -120,7 +132,7 @@ export default function ProductsPage() {
   };
 
   useEffect(() => {
-    fetchCategories();
+    fetchRefs();
   }, []);
 
   useEffect(() => {
@@ -146,7 +158,8 @@ export default function ProductsPage() {
       name: '',
       description: '',
       categoryId: categories[0]?.id ?? '',
-      unitShortName: 'ad',
+      unitId: units[0]?.id ?? '',
+      brandId: '',
       purchasePrice: 0,
       salePrice: 0,
       vatRate: 20,
@@ -164,7 +177,8 @@ export default function ProductsPage() {
       name: p.name,
       description: p.description ?? '',
       categoryId: p.category?.id ?? '',
-      unitShortName: p.unit?.shortName ?? 'ad',
+      unitId: p.unit?.id ?? '',
+      brandId: p.brand?.id ?? '',
       purchasePrice: Number(p.purchasePrice),
       salePrice: Number(p.salePrice),
       vatRate: Number(p.vatRate ?? 20),
@@ -176,22 +190,21 @@ export default function ProductsPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.sku || !form.name || !form.categoryId) {
-      toast.error('SKU, isim ve kategori zorunludur');
+    if (!form.sku || !form.name || !form.categoryId || !form.unitId) {
+      toast.error('SKU, isim, kategori ve birim zorunludur');
       return;
     }
 
     try {
       setSubmitting(true);
-      // unitId için: backend'de unitShortName->id map'i yok, bu MVP'de
-      // units endpoint'i olmadığı için geçici olarak unit'i oluşturmadan
-      // hata verir. v1.0.5'te units API eklenecek.
-      const payload: any = {
+      const payload = {
         sku: form.sku,
         barcode: form.barcode || undefined,
         name: form.name,
         description: form.description || undefined,
         categoryId: form.categoryId,
+        unitId: form.unitId,
+        brandId: form.brandId || undefined,
         purchasePrice: form.purchasePrice,
         salePrice: form.salePrice,
         vatRate: form.vatRate,
@@ -203,8 +216,8 @@ export default function ProductsPage() {
         await api.put(`/products/${editingProduct.id}`, payload);
         toast.success('Ürün güncellendi');
       } else {
-        toast.error('Ürün oluşturma için önce Units API gerekli (v1.0.5)');
-        return;
+        await api.post('/products', payload);
+        toast.success('Ürün oluşturuldu');
       }
 
       setModalOpen(false);
@@ -249,9 +262,9 @@ export default function ProductsPage() {
             Toplam <strong className="text-text-primary">{total}</strong> ürün
           </p>
         </div>
-        <Button onClick={openCreate} disabled>
+        <Button onClick={openCreate}>
           <Plus className="mr-2 h-4 w-4" />
-          Yeni Ürün (v1.0.5)
+          Yeni Ürün
         </Button>
       </div>
 
@@ -462,9 +475,33 @@ export default function ProductsPage() {
                   </select>
                 </div>
                 <div className="space-y-2 sm:col-span-1">
-                  <Label htmlFor="unit">Birim</Label>
-                  <Input id="unit" value={form.unitShortName} disabled />
-                  <p className="text-xs text-text-muted">Units API v1.0.5'te</p>
+                  <Label htmlFor="unitId">Birim *</Label>
+                  <select
+                    id="unitId"
+                    value={form.unitId}
+                    onChange={(e) => setForm({ ...form, unitId: e.target.value })}
+                    className="h-10 w-full rounded-lg border border-border bg-card px-3 text-sm focus:border-brand focus:outline-none"
+                    required
+                  >
+                    <option value="">Seçin</option>
+                    {units.map((u) => (
+                      <option key={u.id} value={u.id}>{u.name} ({u.shortName})</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="brandId">Tedarikçi (opsiyonel)</Label>
+                  <select
+                    id="brandId"
+                    value={form.brandId}
+                    onChange={(e) => setForm({ ...form, brandId: e.target.value })}
+                    className="h-10 w-full rounded-lg border border-border bg-card px-3 text-sm focus:border-brand focus:outline-none"
+                  >
+                    <option value="">Seçin</option>
+                    {brands.map((b) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="purchasePrice">Alış fiyatı</Label>
