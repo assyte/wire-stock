@@ -1,6 +1,6 @@
 'use client';
 
-import { cn } from '@wire-stock/utils';
+import { cn, formatNumber } from '@wire-stock/utils';
 import {
   Package,
   Warehouse,
@@ -9,10 +9,13 @@ import {
   TrendingUp,
   TrendingDown,
   ArrowUpRight,
+  ArrowDownToLine,
+  ArrowUpFromLine,
   ScanLine,
   Activity,
   DollarSign,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +35,39 @@ interface DashboardStats {
   recentMovements: number;
 }
 
+interface Movement {
+  id: string;
+  type: 'IN' | 'OUT' | 'TRANSFER' | 'ADJUSTMENT' | 'RETURN' | 'DAMAGE';
+  quantity: number | string;
+  createdAt: string;
+  product?: { name: string; sku: string };
+  warehouse?: { name: string; code: string };
+}
+
+interface LowStockItem {
+  id: string;
+  sku: string;
+  name: string;
+  totalStock: number;
+  minStock: number;
+  criticalStock: number;
+  status: 'OUT' | 'CRITICAL' | 'LOW';
+  category?: { name: string; color?: string };
+  unit?: { shortName: string };
+}
+
+const MOVEMENT_TYPE_META: Record<
+  Movement['type'],
+  { label: string; color: string; icon: typeof ArrowDownToLine; sign: '+' | '-' | '~' }
+> = {
+  IN:        { label: 'Giriş',    color: 'bg-success/10 text-success',       icon: ArrowDownToLine, sign: '+' },
+  OUT:       { label: 'Çıkış',    color: 'bg-destructive/10 text-destructive', icon: ArrowUpFromLine, sign: '-' },
+  TRANSFER:  { label: 'Transfer', color: 'bg-info/10 text-info',             icon: ScanLine,        sign: '~' },
+  ADJUSTMENT:{ label: 'Düzeltme', color: 'bg-warning/10 text-warning',       icon: ScanLine,        sign: '~' },
+  RETURN:    { label: 'İade',     color: 'bg-accent/10 text-accent',         icon: ArrowDownToLine, sign: '+' },
+  DAMAGE:    { label: 'Hasar',    color: 'bg-destructive/10 text-destructive', icon: ArrowUpFromLine, sign: '-' },
+};
+
 // Backend /organizations/me/stats response → DashboardStats (v1.0.2)
 const mapApiStats = (api: any): DashboardStats => ({
   totalProducts: api.totalProducts ?? 0,
@@ -47,20 +83,28 @@ const mapApiStats = (api: any): DashboardStats => ({
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentMovements, setRecentMovements] = useState<Movement[]>([]);
+  const [lowStock, setLowStock] = useState<LowStockItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchAll = async () => {
       try {
-        const response = await api.get('/organizations/me/stats');
-        setStats(mapApiStats(response.data.data));
+        const [statsRes, movementsRes, lowStockRes] = await Promise.all([
+          api.get('/organizations/me/stats'),
+          api.get('/stock/movements', { params: { page: 1, pageSize: 5 } }),
+          api.get('/stock/low-stock'),
+        ]);
+        setStats(mapApiStats(statsRes.data.data));
+        setRecentMovements(movementsRes.data.data.items);
+        setLowStock(lowStockRes.data.data);
       } catch (error) {
-        console.error('Stats fetch error:', error);
+        console.error('Dashboard fetch error:', error);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchStats();
+    fetchAll();
   }, []);
 
   type StatChangeType = 'up' | 'down' | 'warning';
@@ -246,19 +290,53 @@ const statCards: Array<{
               <Activity className="h-4 w-4 text-brand" />
               Son Stok Hareketleri
             </CardTitle>
-            <button className="flex items-center gap-1 text-xs text-brand hover:underline">
+            <Link href="/stock" className="flex items-center gap-1 text-xs text-brand hover:underline">
               Tümünü Gör
               <ArrowUpRight className="h-3 w-3" />
-            </button>
+            </Link>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-card p-3">
-                <Activity className="h-6 w-6 text-text-muted" />
+            {recentMovements.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-card p-3">
+                  <Activity className="h-6 w-6 text-text-muted" />
+                </div>
+                <p className="mt-3 text-sm text-text-secondary">Henüz hareket yok</p>
+                <p className="text-xs text-text-muted">Stok giriş/çıkışı yapınca burada görünecek</p>
               </div>
-              <p className="mt-3 text-sm text-text-secondary">Henüz hareket yok</p>
-              <p className="text-xs text-text-muted">Stok giriş/çıkışı yapınca burada görünecek</p>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                {recentMovements.map((m) => {
+                  const meta = MOVEMENT_TYPE_META[m.type] ?? MOVEMENT_TYPE_META.ADJUSTMENT;
+                  const Icon = meta.icon;
+                  const qty = Number(m.quantity);
+                  return (
+                    <div key={m.id} className="flex items-center justify-between rounded-lg border border-border/50 bg-background-surface/50 px-3 py-2">
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <span className={cn('inline-flex h-7 w-7 items-center justify-center rounded-full', meta.color)}>
+                          <Icon className="h-3.5 w-3.5" />
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-text-primary">{m.product?.name ?? '—'}</p>
+                          <p className="text-xs text-text-muted">
+                            {m.warehouse?.name} •{' '}
+                            {new Date(m.createdAt).toLocaleString('tr-TR', { dateStyle: 'short', timeStyle: 'short' })}
+                          </p>
+                        </div>
+                      </div>
+                      <span className={cn(
+                        'shrink-0 rounded-md px-2 py-0.5 text-sm font-semibold tabular-nums',
+                        meta.sign === '+' && 'bg-success/10 text-success',
+                        meta.sign === '-' && 'bg-destructive/10 text-destructive',
+                        meta.sign === '~' && 'bg-info/10 text-info',
+                      )}>
+                        {meta.sign}{formatNumber(qty)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -268,19 +346,55 @@ const statCards: Array<{
               <AlertTriangle className="h-4 w-4 text-warning" />
               Düşük Stok Uyarıları
             </CardTitle>
-            <button className="flex items-center gap-1 text-xs text-brand hover:underline">
+            <Link href="/products?lowStock=true" className="flex items-center gap-1 text-xs text-brand hover:underline">
               Tümünü Gör
               <ArrowUpRight className="h-3 w-3" />
-            </button>
+            </Link>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-warning/10 p-3">
-                <AlertTriangle className="h-6 w-6 text-warning" />
+            {lowStock.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <div className="rounded-full bg-warning/10 p-3">
+                  <AlertTriangle className="h-6 w-6 text-warning" />
+                </div>
+                <p className="mt-3 text-sm text-text-secondary">Uyarı yok 🎉</p>
+                <p className="text-xs text-text-muted">Tüm stoklar yeterli seviyede</p>
               </div>
-              <p className="mt-3 text-sm text-text-secondary">Uyarı yok 🎉</p>
-              <p className="text-xs text-text-muted">Tüm stoklar yeterli seviyede</p>
-            </div>
+            ) : (
+              <div className="space-y-3">
+                {lowStock.slice(0, 5).map((item) => {
+                  const ratio = Math.max(0, Math.min(1, item.totalStock / Math.max(item.minStock, 1)));
+                  const isOut = item.status === 'OUT';
+                  return (
+                    <div key={item.id} className="flex items-center justify-between rounded-lg border border-border/50 bg-background-surface/50 px-3 py-2">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-text-primary">{item.name}</p>
+                        <p className="font-mono text-xs text-text-muted">{item.sku}</p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <div className="text-right">
+                          <p className={cn(
+                            'text-sm font-semibold tabular-nums',
+                            isOut ? 'text-destructive' : 'text-warning',
+                          )}>
+                            {formatNumber(item.totalStock)} <span className="text-xs text-text-muted">{item.unit?.shortName ?? ''}</span>
+                          </p>
+                          <p className="text-xs text-text-muted">
+                            min {formatNumber(item.minStock)}
+                          </p>
+                        </div>
+                        <div className="h-8 w-1 rounded-full bg-card overflow-hidden">
+                          <div
+                            className={cn('h-full', isOut ? 'bg-destructive' : 'bg-warning')}
+                            style={{ height: `${ratio * 100}%`, marginTop: `${(1 - ratio) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
