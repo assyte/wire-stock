@@ -1,6 +1,8 @@
 {
   "extends": ["@wire-stock/eslint-config/next.js"],
+  "plugins": ["react-hooks"],
   "rules": {
-    "react/no-unescaped-entities": "off"
+    "react/no-unescaped-entities": "off",
+    "react-hooks/exhaustive-deps": "warn"
   }
 }

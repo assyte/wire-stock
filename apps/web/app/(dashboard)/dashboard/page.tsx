@@ -1,6 +1,6 @@
 'use client';
 
-import { cn, formatCurrency } from '@wire-stock/utils';
+import { cn } from '@wire-stock/utils';
 import {
   Package,
   Warehouse,
@@ -32,6 +32,18 @@ interface DashboardStats {
   recentMovements: number;
 }
 
+// Backend /organizations/me/stats response → DashboardStats (v1.0.2)
+const mapApiStats = (api: any): DashboardStats => ({
+  totalProducts: api.totalProducts ?? 0,
+  totalStockValue: 0, // backend v1.0.5'te eklenecek
+  lowStockProducts: api.lowStockProducts ?? 0,
+  outOfStockProducts: api.outOfStockProducts ?? 0,
+  totalCustomers: api.totalCustomers ?? 0,
+  totalSuppliers: api.totalSuppliers ?? 0,
+  totalWarehouses: api.totalWarehouses ?? 0,
+  recentMovements: 0,
+});
+
 export default function DashboardPage() {
   const { user } = useAuthStore();
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -41,7 +53,7 @@ export default function DashboardPage() {
     const fetchStats = async () => {
       try {
         const response = await api.get('/organizations/me/stats');
-        setStats(response.data.data);
+        setStats(mapApiStats(response.data.data));
       } catch (error) {
         console.error('Stats fetch error:', error);
       } finally {
@@ -71,9 +83,9 @@ const statCards: Array<{
     },
     {
       title: 'Stok Değeri',
-      value: formatCurrency(stats?.totalStockValue ?? 0),
+      value: '—',
       icon: DollarSign,
-      change: '+8.2%',
+      change: 'v1.0.5',
       changeType: 'up',
       color: 'accent',
     },
