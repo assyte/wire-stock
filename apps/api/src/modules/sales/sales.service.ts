@@ -10,12 +10,6 @@ import { PrismaService } from '@/common/prisma/prisma.service';
 
 import { CreateSalesOrderDto, UpdateSalesOrderDto } from './dto/sales.dto';
 
-interface OrderItemTotals {
-  subtotal: number;
-  vatTotal: number;
-  total: number;
-}
-
 @Injectable()
 export class SalesService {
   constructor(private readonly prisma: PrismaService) {}

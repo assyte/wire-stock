@@ -95,7 +95,7 @@ export class CustomersService {
   }
 
   async remove(organizationId: string, id: string) {
-    const customer = await this.findOne(organizationId, id);
+    await this.findOne(organizationId, id);
 
     // Aktif satış siparişi var mı kontrol
     const activeOrders = await this.prisma.salesOrder.count({

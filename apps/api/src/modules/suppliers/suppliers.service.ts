@@ -97,7 +97,7 @@ export class SuppliersService {
   }
 
   async remove(organizationId: string, id: string) {
-    const supplier = await this.findOne(organizationId, id);
+    await this.findOne(organizationId, id);
 
     const orderCount = await this.prisma.purchaseOrder.count({
       where: { supplierId: id, status: { in: ['DRAFT', 'SENT', 'CONFIRMED'] } },

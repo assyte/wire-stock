@@ -31,7 +31,17 @@ export class CategoriesService {
   async findAll(organizationId: string) {
     return this.prisma.category.findMany({
       where: { organizationId },
-      include: {
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        icon: true,
+        color: true,
+        parentId: true,
+        organizationId: true,
+        createdAt: true,
+        updatedAt: true,
         _count: {
           select: { products: true },
         },
