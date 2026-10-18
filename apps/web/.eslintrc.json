@@ -1,0 +1,6 @@
+{
+  "extends": ["@wire-stock/eslint-config/next.js"],
+  "rules": {
+    "react/no-unescaped-entities": "off"
+  }
+}

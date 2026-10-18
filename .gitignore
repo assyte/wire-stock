@@ -1,0 +1,115 @@
+# ============================================
+# DEPENDENCIES
+# ============================================
+node_modules/
+.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# ============================================
+# TESTING
+# ============================================
+coverage/
+*.lcov
+.nyc_output
+
+# ============================================
+# NEXT.JS
+# ============================================
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
+next-env.d.ts
+
+# ============================================
+# NESTJS
+# ============================================
+*.log
+logs/
+*.pid
+*.seed
+*.pid.lock
+
+# ============================================
+# PRODUCTION
+# ============================================
+build/
+dist/
+*.tgz
+
+# ============================================
+# ENVIRONMENT
+# ============================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+!.env.example
+
+# ============================================
+# IDEs
+# ============================================
+.idea/
+.vscode/
+!.vscode/settings.json
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ============================================
+# PRISMA
+# ============================================
+packages/database/prisma/migrations/dev/
+packages/database/*.db
+packages/database/*.db-journal
+packages/database/.env
+packages/database/tsconfig.tsbuildinfo
+
+# ============================================
+# MISC
+# ============================================
+*.pem
+.cache/
+.parcel-cache
+.turbo/
+.eslintcache
+.pnpm-store/
+
+# ============================================
+# WIRE-STOCK SPECIFIC
+# ============================================
+apps/api/dist/
+apps/api/.turbo/
+apps/api/*.tsbuildinfo
+apps/web/.next/
+apps/web/.turbo/
+apps/web/out/
+docker_postgres_data/
+docker_redis_data/
+docker_minio_data/
+# ignore the temp .env copy under packages/database (it mirrors workspace root .env)
+packages/database/.env
+# OS / editor
+*.swp
+*.swo
+
+# ============================================
+# UPLOADS / STORAGE
+# ============================================
+uploads/
+storage/
+tmp/
+temp/
+
+# ============================================
+# TERRAFORM / INFRA
+# ============================================
+.terraform/
+*.tfstate
+*.tfstate.*

@@ -1,0 +1,19 @@
+{
+  "name": "@wire-stock/utils",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.3.0"
+  },
+  "devDependencies": {
+    "@wire-stock/eslint-config": "workspace:*",
+    "@wire-stock/tsconfig": "workspace:*",
+    "typescript": "^5.4.0"
+  }
+}
