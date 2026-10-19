@@ -5,8 +5,9 @@ import {
   Delete,
   Body,
   Param,
+  Query,
 } from '@nestjs/common';
-import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from '@nestjs/swagger';
 
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
 
@@ -21,8 +22,26 @@ export class CategoriesController {
 
   @Get()
   @ApiOperation({ summary: 'Tüm kategorileri listele' })
-  async findAll(@CurrentUser('organizationId') organizationId: string) {
-    return this.categoriesService.findAll(organizationId);
+  @ApiQuery({ name: 'parentId', required: false, description: 'Sadece belirtilen parentId altındaki kategorileri getir' })
+  @ApiQuery({ name: 'rootsOnly', required: false, description: 'Sadece ana kategorileri getir (parentId null)' })
+  async findAll(
+    @CurrentUser('organizationId') organizationId: string,
+    @Query('parentId') parentId?: string,
+    @Query('rootsOnly') rootsOnly?: string,
+  ) {
+    return this.categoriesService.findAll(organizationId, {
+      parentId: parentId === '' || parentId === 'null' ? null : parentId,
+      rootsOnly: rootsOnly === 'true',
+    });
+  }
+
+  @Get('slug/:slug')
+  @ApiOperation({ summary: 'Slug ile tek kategori detayı (alt kategorileri + ürün sayısı ile birlikte)' })
+  async findBySlug(
+    @CurrentUser('organizationId') organizationId: string,
+    @Param('slug') slug: string,
+  ) {
+    return this.categoriesService.findBySlug(organizationId, slug);
   }
 
   @Post()

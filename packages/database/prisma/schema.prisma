@@ -155,6 +155,7 @@ model Organization {
   language        String   @default("tr")
 
   users           User[]
+  workers         Worker[]
   warehouses      Warehouse[]
   products        Product[]
   suppliers       Supplier[]
@@ -205,6 +206,35 @@ model User {
   @@index([organizationId])
   @@index([email])
   @@map("users")
+}
+
+// ============================================
+// WORKERS (v1.1.0 — Çalışanlar, usta, çırak)
+// ============================================
+model Worker {
+  id              String   @id @default(cuid())
+
+  firstName       String
+  lastName        String
+  title           String   @default("Usta Elektrikçi")
+  phone           String?
+  email           String?
+  notes           String?
+
+  organizationId  String
+  organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  isActive        Boolean   @default(true)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  stockMovements  StockMovement[]
+
+  @@index([organizationId])
+  @@index([lastName, firstName])
+  @@map("workers")
 }
 
 model Session {
@@ -430,6 +460,9 @@ model StockMovement {
 
   userId          String
   user            User     @relation(fields: [userId], references: [id])
+
+  workerId        String?
+  worker          Worker?  @relation(fields: [workerId], references: [id])
 
   organizationId  String
   organization    Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

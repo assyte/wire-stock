@@ -1,0 +1,116 @@
+{
+  "$schema": "https://uas.local/schema/config.json",
+  "project": {
+    "name": "wire-stock",
+    "path": "C:\\Users\\asete\\OneDrive\\Desktop\\dev\\wire-stock",
+    "type": "web-app",
+    "linked_at": "2026-10-19T14:55:51Z",
+    "description": "Elektrik-elektronik sektörü için sade bir sanal depo + stok kontrol SaaS"
+  },
+  "impact_classification": {
+    "D0": {
+      "auto_approve": true,
+      "examples": ["Typo fix", "Documentation update", "Comment update"],
+      "require_user_review": false
+    },
+    "D1": {
+      "auto_approve": ["refactor", "new-feature", "ui-update", "frontend-style-change"],
+      "require_user_review_for": ["schema-change", "api-endpoint-change"],
+      "examples": ["Refactor user controller", "Add new dashboard widget", "Add /products/:id/specs endpoint"]
+    },
+    "D2": {
+      "auto_approve": [],
+      "require_user_review": true,
+      "examples": ["Production deployment", "Auth flow change", "Database migration", "Secret management"]
+    },
+    "D3": {
+      "block": true,
+      "require_user_review": true,
+      "examples": ["Drop production table", "Delete audit log", "Bypass security check"]
+    }
+  },
+  "agents": {
+    "preferred_sequence": [
+      "frontend",
+      "backend",
+      "qa",
+      "reviewer"
+    ],
+    "bias": {
+      "frontend": 0.4,
+      "backend": 0.3,
+      "qa": 0.2,
+      "master-craftsman": 0.3,
+      "employer-prompt": 0.2,
+      "reviewer": 0.1
+    },
+    "domain_knowledge": {
+      "stack": "Next.js 15 + NestJS 10 + Prisma + PostgreSQL",
+      "language": "TypeScript",
+      "package_manager": "pnpm",
+      "deployment": "Docker Compose (Postgres, Redis, MinIO, MailHog)",
+      "current_phase": "v1.1.0-alpha: 'DükkanDepo' sadeleşırlık",
+      "audience": "Türk elektrik-esitesi ustası + işveren",
+      "ui_preference": "light-theme, simple, samimi"
+    }
+  },
+  "qa": {
+    "automatic_quality_gates": true,
+    "required_before_merge": [
+      "lint",
+      "typecheck",
+      "build"
+    ],
+    "run_after_task": [
+      "lint",
+      "typecheck",
+      "build"
+    ],
+    "fail_fast": true,
+    "block_on_D1_failure": true
+  },
+  "memory": {
+    "scopes": [
+      "global",
+      "wire-stock:web-app",
+      "wire-stock:product-feature"
+    ],
+    "auto_extract": {
+      "enabled": true,
+      "after_each_task": true,
+      "categories": [
+        "successful-pattern",
+        "anti-pattern",
+        "performance-tip",
+        "security-concern",
+        "ux-improvement"
+      ]
+    },
+    "promote_to_global_after": 3
+  },
+  "workflows": {
+    "preferred": [
+      "web-feature",
+      "ui-update",
+      "refactor"
+    ]
+  },
+  "schedule": {
+    "mode": "manual",
+    "auto_triggers": [],
+    "notes": "User prefers manual-only triggers. UAS runs only when explicitly invoked."
+  },
+  "lessons": {
+    "require_human_review": true,
+    "auto_promote_threshold": 3,
+    "scope_filter": ["wire-stock:web-app", "wire-stock:product-feature"]
+  },
+  "audit": {
+    "log_everything": true,
+    "critical_events_use_sync_flush": true
+  },
+  "telemetry": {
+    "store_in_uas_only": true,
+    "never_leak_to_project": true
+  }
+}

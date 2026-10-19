@@ -34,6 +34,11 @@ export class CreateStockMovementDto {
   @Type(() => Number)
   unitPrice?: number;
 
+  @ApiPropertyOptional({ description: 'Bu malzeme kime verildi? (OUT hareketlerinde)' })
+  @IsOptional()
+  @IsString()
+  workerId?: string;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

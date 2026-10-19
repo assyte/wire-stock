@@ -10,6 +10,9 @@ import {
   Trash2,
   X,
   AlertTriangle,
+  Barcode,
+  Printer,
+  Download,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { toast } from 'sonner';
@@ -18,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { BarcodePrintModal } from '@/components/barcode-print-modal';
 import api from '@/lib/api';
 
 interface Product {
@@ -73,6 +77,7 @@ export default function ProductsPage() {
 
   // Modal
   const [modalOpen, setModalOpen] = useState(false);
+  const [barcodeProduct, setBarcodeProduct] = useState<Product | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -376,6 +381,18 @@ export default function ProductsPage() {
                         <td className="py-3 px-2">
                           <div className="flex items-center justify-end gap-1">
                             <button
+                              onClick={() => setBarcodeProduct(p)}
+                              className={cn(
+                                'rounded-md p-1.5 transition-colors',
+                                p.barcode
+                                  ? 'text-emerald-600 hover:bg-emerald-50'
+                                  : 'text-text-muted hover:bg-card hover:text-emerald-600',
+                              )}
+                              title={p.barcode ? `Barkod: ${p.barcode}` : 'Barkod Üret'}
+                            >
+                              <Barcode className="h-4 w-4" />
+                            </button>
+                            <button
                               onClick={() => openEdit(p)}
                               className="rounded-md p-1.5 text-text-muted hover:bg-card hover:text-brand"
                               title="Düzenle"
@@ -531,6 +548,14 @@ export default function ProductsPage() {
             </CardContent>
           </Card>
         </div>
+      )}
+
+      {/* Barkod Basma Modalı */}
+      {barcodeProduct && (
+        <BarcodePrintModal
+          product={barcodeProduct}
+          onClose={() => setBarcodeProduct(null)}
+        />
       )}
     </div>
   );

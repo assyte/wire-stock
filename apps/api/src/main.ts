@@ -43,10 +43,10 @@ async function bootstrap() {
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
-      forbidNonWhitelisted: true,
+      forbidNonWhitelisted: false, // query params allow extra keys (frontend may add future filters)
       transform: true,
       transformOptions: {
-        enableImplicitConversion: true,
+        enableImplicitConversion: false, // ❗ query string'leri otomatik number'a çevirmesin
       },
     }),
   );

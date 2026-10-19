@@ -49,8 +49,21 @@ export class ProductsController {
     });
   }
 
+  // ⚠️ Route sırası kritik: spesifik route'lar :id'den ÖNCE tanımlanmalı
+  @Get('lookup/:barcode')
+  @ApiOperation({
+    summary:
+      'Barkod ile zenginleştirilmiş ürün lookup — /scan sayfası için (stok + raf bilgisi)',
+  })
+  async lookupByBarcode(
+    @CurrentUser('organizationId') organizationId: string,
+    @Param('barcode') barcode: string,
+  ) {
+    return this.productsService.lookupByBarcode(organizationId, barcode);
+  }
+
   @Get('barcode/:barcode')
-  @ApiOperation({ summary: 'Barkod ile ürün bul' })
+  @ApiOperation({ summary: 'Barkod ile basit ürün bul' })
   async findByBarcode(
     @CurrentUser('organizationId') organizationId: string,
     @Param('barcode') barcode: string,
@@ -65,6 +78,17 @@ export class ProductsController {
     @Param('id') id: string,
   ) {
     return this.productsService.findOne(organizationId, id);
+  }
+
+  @Post(':id/generate-barcode')
+  @ApiOperation({
+    summary: 'Ürüne EAN-13 barkod üret ve kaydet (869 = Türkiye prefix)',
+  })
+  async generateBarcode(
+    @CurrentUser('organizationId') organizationId: string,
+    @Param('id') id: string,
+  ) {
+    return this.productsService.generateBarcode(organizationId, id);
   }
 
   @Post()

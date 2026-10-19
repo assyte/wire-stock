@@ -28,9 +28,20 @@ export class CategoriesService {
       .replace(/-+/g, '-');
   }
 
-  async findAll(organizationId: string) {
+  async findAll(
+    organizationId: string,
+    options: { parentId?: string | null; rootsOnly?: boolean } = {},
+  ) {
+    const { parentId, rootsOnly } = options;
+    const where: any = { organizationId };
+    if (rootsOnly) {
+      where.parentId = null;
+    } else if (parentId !== undefined) {
+      where.parentId = parentId; // null = roots, undefined = all
+    }
+
     return this.prisma.category.findMany({
-      where: { organizationId },
+      where,
       select: {
         id: true,
         name: true,
@@ -48,6 +59,33 @@ export class CategoriesService {
       },
       orderBy: { name: 'asc' },
     });
+  }
+
+  async findBySlug(organizationId: string, slug: string) {
+    const category = await this.prisma.category.findFirst({
+      where: { slug, organizationId },
+      include: {
+        children: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+            icon: true,
+            color: true,
+            description: true,
+            _count: { select: { products: true } },
+          },
+          orderBy: { name: 'asc' },
+        },
+        _count: { select: { products: true } },
+      },
+    });
+
+    if (!category) {
+      throw new NotFoundException('Kategori bulunamadı');
+    }
+
+    return category;
   }
 
   async create(organizationId: string, dto: CreateCategoryDto) {

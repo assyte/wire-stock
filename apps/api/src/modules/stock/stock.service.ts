@@ -122,6 +122,7 @@ export class StockService {
           totalPrice: dto.unitPrice
             ? dto.unitPrice * dto.quantity
             : null,
+          workerId: dto.workerId || null,
           referenceType: dto.referenceType,
           referenceId: dto.referenceId,
           note: dto.note,
@@ -132,6 +133,7 @@ export class StockService {
           product: { select: { name: true, sku: true } },
           warehouse: { select: { name: true, code: true } },
           user: { select: { firstName: true, lastName: true } },
+          worker: { select: { id: true, firstName: true, lastName: true, title: true } },
         },
       });
 
@@ -355,6 +357,7 @@ export class StockService {
           product: { select: { name: true, sku: true } },
           warehouse: { select: { name: true, code: true } },
           user: { select: { firstName: true, lastName: true } },
+          worker: { select: { id: true, firstName: true, lastName: true, title: true } },
         },
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,

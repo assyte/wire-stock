@@ -10,16 +10,14 @@ import configuration from './config/configuration';
 import { validationSchema } from './config/validation.schema';
 import { AuthModule } from './modules/auth/auth.module';
 import { CategoriesModule } from './modules/categories/categories.module';
-import { CustomersModule } from './modules/customers/customers.module';
 import { HealthModule } from './modules/health/health.module';
-import { OrganizationsModule } from './modules/organizations/organizations.module';
 import { ProductsModule } from './modules/products/products.module';
-import { SalesModule } from './modules/sales/sales.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { StockModule } from './modules/stock/stock.module';
-import { SuppliersModule } from './modules/suppliers/suppliers.module';
 import { UnitsModule } from './modules/units/units.module';
 import { UsersModule } from './modules/users/users.module';
 import { WarehousesModule } from './modules/warehouses/warehouses.module';
+import { WorkersModule } from './modules/workers/workers.module';
 
 @Module({
   imports: [
@@ -56,15 +54,13 @@ import { WarehousesModule } from './modules/warehouses/warehouses.module';
     // Feature modules
     AuthModule,
     UsersModule,
-    OrganizationsModule,
+    WorkersModule,
     WarehousesModule,
     CategoriesModule,
     UnitsModule,
     ProductsModule,
+    ReportsModule,
     StockModule,
-    CustomersModule,
-    SuppliersModule,
-    SalesModule,
     HealthModule,
   ],
   providers: [

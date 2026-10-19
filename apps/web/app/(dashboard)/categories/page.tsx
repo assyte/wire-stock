@@ -3,20 +3,15 @@
 import {
   Plus,
   Trash2,
-  FolderTree,
   Loader2,
   X,
   Search,
-  ChevronRight,
-  ChevronDown,
-  Edit3,
   CheckSquare,
   Square,
   Cable,
   Plug,
   Lightbulb,
   Shield,
-  ShieldCheck,
   Zap,
   Wrench,
   Package,
@@ -29,20 +24,27 @@ import {
   Car,
   Box,
   Bolt,
+  ChevronRight,
   type LucideIcon,
+  Hash,
+  Sparkles,
+  ArrowRight,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
+import { KpiPanel } from '@/components/big-panel';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import api from '@/lib/api';
+import { getPalette } from '@/lib/category-palette';
 import { cn } from '@/lib/utils';
 
 // =================================================================
-// Lucide Icon Mapping (gerçek vektör ikonlar)
+// ICON MAP (Lucide)
 // =================================================================
 const ICON_MAP: Record<string, LucideIcon> = {
   plug: Plug,
@@ -50,7 +52,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   cable: Cable,
   package: Package,
   shield: Shield,
-  'shield-check': ShieldCheck,
+  'shield-check': Shield,
   zap: Zap,
   wrench: Wrench,
   tool: Wrench,
@@ -65,14 +67,19 @@ const ICON_MAP: Record<string, LucideIcon> = {
   phone: Phone,
 };
 
-// Emoji fallback'ler (lucide bulamazsa)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const _EMOJI_MAP: Record<string, string> = {
-  plug: '🔌', lightbulb: '💡', cable: '🔌', package: '📦',
-  shield: '🛡️', 'shield-check': '✅', zap: '⚡', wrench: '🔧',
-  tool: '🛠️', box: '📦', bolt: '⚡', cpu: '🤖',
-  flame: '🔥', car: '🚗', sun: '☀️', battery: '🔋',
-  antenna: '📡', phone: '☎️',
+// Texture fallback'leri — texture'ı olmayan kategoriler için
+const TEXTURE_MAP: Record<string, string> = {
+  aydinlatma: '/categories/main/ayd\u0131nlatma.png',
+  'anahtar-priz': '/categories/main/anahtar-priz.png',
+  kablolar: '/categories/main/kablolar-tesisat.png',
+  'kanal-boru': '/categories/main/kanal-boru-buat.png',
+  klemens: '/categories/main/klemens-baglanti.png',
+  'motor-surucu': '/categories/main/motor-surucu-kontaktor.png',
+  otomasyon: '/categories/main/otomasyon-kontrol.png',
+  'pano-malzemeleri': '/categories/main/pano-salt-tesisleri.png',
+  'pano-sigorta': '/categories/main/pano-sigorta.png',
+  'salt-malzemeleri': '/categories/main/salt-malzemeleri-koruma.png',
+  trafolar: '/categories/main/trafo.png',
 };
 
 const ICON_OPTIONS = [
@@ -81,38 +88,25 @@ const ICON_OPTIONS = [
   { value: 'cable', label: 'Kablo' },
   { value: 'package', label: 'Paket' },
   { value: 'shield', label: 'Koruma' },
-  { value: 'shield-check', label: 'Güvenlik' },
   { value: 'zap', label: 'Enerji' },
   { value: 'wrench', label: 'Alet' },
   { value: 'box', label: 'Kutu' },
   { value: 'bolt', label: 'Cıvata' },
   { value: 'cpu', label: 'Otomasyon' },
   { value: 'flame', label: 'Yangın' },
-  { value: 'car', label: 'Araç' },
   { value: 'sun', label: 'Solar' },
   { value: 'battery', label: 'Akü/UPS' },
   { value: 'antenna', label: 'Anten' },
-  { value: 'phone', label: 'Telefon' },
 ];
 
 const COLOR_OPTIONS = [
-  { value: '#3B82F6', label: 'Mavi' },
-  { value: '#10B981', label: 'Yeşil' },
+  { value: '#059669', label: 'Yeşil' },
   { value: '#F59E0B', label: 'Turuncu' },
   { value: '#EF4444', label: 'Kırmızı' },
+  { value: '#3B82F6', label: 'Mavi' },
   { value: '#8B5CF6', label: 'Mor' },
-  { value: '#EC4899', label: 'Pembe' },
-  { value: '#14B8A6', label: 'Teal' },
-  { value: '#FFB800', label: 'Sarı' },
-  { value: '#00D9A3', label: 'Mint' },
-  { value: '#06B6D4', label: 'Cyan' },
-  { value: '#737373', label: 'Gri' },
-  { value: '#7C3AED', label: 'İndigo' },
+  { value: '#1E293B', label: 'Antrasit' },
 ];
-
-// Türkçe-uyumlu sıralama
-const trCollator = new Intl.Collator('tr', { sensitivity: 'base', numeric: true });
-const sortTr = (a: string, b: string) => trCollator.compare(a, b);
 
 interface Category {
   id: string;
@@ -125,39 +119,10 @@ interface Category {
   _count?: { products: number };
 }
 
-interface CategoryNode extends Category {
-  children: CategoryNode[];
-}
-
-function buildTree(categories: Category[]): CategoryNode[] {
-  const map = new Map<string, CategoryNode>();
-  categories.forEach((c) => map.set(c.id, { ...c, children: [] }));
-  const roots: CategoryNode[] = [];
-  map.forEach((node) => {
-    if (node.parentId && map.has(node.parentId)) {
-      map.get(node.parentId)!.children.push(node);
-    } else {
-      roots.push(node);
-    }
-  });
-  const sortTree = (nodes: CategoryNode[]) => {
-    nodes.sort((a, b) => sortTr(a.name, b.name));
-    nodes.forEach((n) => sortTree(n.children));
-  };
-  sortTree(roots);
-  return roots;
-}
-
-function countProducts(node: CategoryNode): number {
-  const own = node._count?.products ?? 0;
-  return own + node.children.reduce((acc, c) => acc + countProducts(c), 0);
-}
-
 export default function CategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [modalOpen, setModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
@@ -171,14 +136,11 @@ export default function CategoriesPage() {
     parentId: '',
   });
 
-  const tree = useMemo(() => buildTree(categories), [categories]);
-
   const fetchCategories = async () => {
     try {
       setLoading(true);
       const { data } = await api.get('/categories');
       setCategories(data.data ?? []);
-      setExpanded(new Set((data.data ?? []).map((c: Category) => c.id)));
     } catch {
       toast.error('Kategoriler yüklenemedi');
     } finally {
@@ -190,34 +152,37 @@ export default function CategoriesPage() {
     fetchCategories();
   }, []);
 
-  const treeSearched = useMemo(() => {
-    if (!search.trim()) return tree;
-    const q = search.toLowerCase();
-    const filter = (node: CategoryNode): CategoryNode | null => {
-      const children = node.children.map(filter).filter(Boolean) as CategoryNode[];
-      const match = node.name.toLowerCase().includes(q) || node.slug.toLowerCase().includes(q);
-      if (match || children.length > 0) return { ...node, children };
-      return null;
-    };
-    return tree.map(filter).filter(Boolean) as CategoryNode[];
-  }, [tree, search]);
+  const rootCategories = useMemo(
+    () => categories.filter((c) => !c.parentId),
+    [categories],
+  );
 
-  const stats = useMemo(() => {
-    const roots = categories.filter((c) => !c.parentId).length;
-    const subs = categories.filter((c) => c.parentId).length;
-    const products = categories.reduce((acc, c) => acc + (c._count?.products ?? 0), 0);
-    const orphans = categories.filter((c) => c.parentId && !categories.some((p) => p.id === c.parentId)).length;
-    return { roots, subs, products, orphans };
+  const childrenMap = useMemo(() => {
+    const map = new Map<string, Category[]>();
+    categories.forEach((c) => {
+      if (c.parentId) {
+        const arr = map.get(c.parentId) ?? [];
+        arr.push(c);
+        map.set(c.parentId, arr);
+      }
+    });
+    return map;
   }, [categories]);
 
-  const toggleExpand = (id: string) => {
-    setExpanded((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
+  const filteredRoots = useMemo(() => {
+    if (!search.trim()) return rootCategories;
+    const q = search.toLowerCase();
+    return rootCategories.filter(
+      (c) => c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q),
+    );
+  }, [rootCategories, search]);
+
+  const stats = useMemo(() => {
+    const roots = rootCategories.length;
+    const subs = categories.length - roots;
+    const products = categories.reduce((acc, c) => acc + (c._count?.products ?? 0), 0);
+    return { roots, subs, products };
+  }, [categories, rootCategories]);
 
   const toggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -228,26 +193,9 @@ export default function CategoriesPage() {
     });
   };
 
-  const selectAll = () => {
-    if (selectedIds.size === categories.length) setSelectedIds(new Set());
-    else setSelectedIds(new Set(categories.map((c) => c.id)));
-  };
-
-  const openCreate = (parentId: string | null = null) => {
+  const openCreate = () => {
     setEditingCategory(null);
-    setForm({ name: '', description: '', icon: 'plug', color: '#3B82F6', parentId: parentId ?? '' });
-    setModalOpen(true);
-  };
-
-  const openEdit = (cat: Category) => {
-    setEditingCategory(cat);
-    setForm({
-      name: cat.name,
-      description: cat.description ?? '',
-      icon: cat.icon ?? 'plug',
-      color: cat.color ?? '#3B82F6',
-      parentId: cat.parentId ?? '',
-    });
+    setForm({ name: '', description: '', icon: 'plug', color: '#3B82F6', parentId: '' });
     setModalOpen(true);
   };
 
@@ -282,11 +230,7 @@ export default function CategoriesPage() {
     }
   };
 
-  const handleDelete = async (id: string, name: string, hasProducts: boolean) => {
-    if (hasProducts) {
-      toast.error('Bu kategoride ürün var. Önce ürünleri taşıyın.');
-      return;
-    }
+  const handleDelete = async (id: string, name: string) => {
     if (!confirm(`"${name}" kategorisini silmek istediğinize emin misiniz?`)) return;
     try {
       await api.delete(`/categories/${id}`);
@@ -309,8 +253,12 @@ export default function CategoriesPage() {
       let success = 0;
       let failed = 0;
       for (const id of selectedIds) {
-        try { await api.delete(`/categories/${id}`); success++; }
-        catch { failed++; }
+        try {
+          await api.delete(`/categories/${id}`);
+          success++;
+        } catch {
+          failed++;
+        }
       }
       toast.success(`${success} silindi${failed ? `, ${failed} atlandı` : ''}`);
       setSelectedIds(new Set());
@@ -320,450 +268,631 @@ export default function CategoriesPage() {
     }
   };
 
-  // =================================================================
-  // Kategori kartı (büyük hero)
-  // =================================================================
-  const CategoryCard = ({ node, level = 0 }: { node: CategoryNode; level?: number }) => {
-    const isExpanded = expanded.has(node.id);
-    const isSelected = selectedIds.has(node.id);
-    const hasChildren = node.children.length > 0;
-    const productCount = countProducts(node);
-    const Icon = ICON_MAP[node.icon ?? 'plug'] ?? Plug;
-    const color = node.color ?? '#3B82F6';
-
-    return (
-      <div key={node.id} className={cn('group/card', level > 0 && 'ml-4 md:ml-8 mt-2')}>
-        <div
-          className={cn(
-            'relative overflow-hidden rounded-2xl border bg-background-surface transition-all duration-300',
-            'hover:shadow-2xl hover:-translate-y-0.5',
-            isSelected
-              ? 'border-brand ring-2 ring-brand/40 shadow-lg'
-              : 'border-border hover:border-brand/40',
-          )}
-          style={{
-            // Renk-temalı shadow
-            boxShadow: isSelected
-              ? `0 0 0 4px ${color}30, 0 8px 24px ${color}25`
-              : undefined,
-          }}
-        >
-          {/* Gradient overlay background */}
-          <div
-            className="pointer-events-none absolute inset-0 opacity-[0.04]"
-            style={{
-              background: `radial-gradient(circle at 100% 0%, ${color}, transparent 60%)`,
-            }}
-          />
-
-          {/* Animated shimmer on hover */}
-          <div
-            className="pointer-events-none absolute inset-0 -translate-x-full opacity-0 transition-all duration-700 group-hover/card:translate-x-full group-hover/card:opacity-30"
-            style={{
-              background: `linear-gradient(90deg, transparent, ${color}40, transparent)`,
-            }}
-          />
-
-          <div className="relative flex items-center gap-3 p-4 md:p-5">
-            {/* Expand toggle */}
-            {hasChildren ? (
-              <button
-                type="button"
-                onClick={() => toggleExpand(node.id)}
-                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-lg text-text-muted transition-all hover:scale-110 hover:bg-card hover:text-text-primary"
-              >
-                {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
-              </button>
-            ) : (
-              <span className="w-7 flex-shrink-0" />
-            )}
-
-            {/* Checkbox */}
-            <button
-              type="button"
-              onClick={() => toggleSelect(node.id)}
-              className="flex-shrink-0 text-text-muted transition-all hover:scale-110 hover:text-brand"
-              title="Seç"
-            >
-              {isSelected ? (
-                <CheckSquare className="h-4 w-4 text-brand" />
-              ) : (
-                <Square className="h-4 w-4" />
-              )}
-            </button>
-
-            {/* Large animated icon */}
-            <div
-              className="relative flex h-14 w-14 flex-shrink-0 items-center justify-center rounded-2xl shadow-lg transition-all duration-300 group-hover/card:scale-110 group-hover/card:rotate-3"
-              style={{
-                background: `linear-gradient(135deg, ${color}25, ${color}60)`,
-                border: `2px solid ${color}50`,
-                boxShadow: `0 4px 16px ${color}30`,
-              }}
-            >
-              <Icon
-                className="h-7 w-7 transition-all"
-                style={{ color, strokeWidth: 2 }}
-              />
-              {/* Glow effect */}
-              <div
-                className="absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-300 group-hover/card:opacity-100"
-                style={{
-                  background: `radial-gradient(circle, ${color}20, transparent 70%)`,
-                }}
-              />
-            </div>
-
-            {/* Name + meta */}
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <p
-                  className="truncate font-display text-base font-semibold text-text-primary md:text-lg"
-                >
-                  {node.name}
-                </p>
-                {level === 0 && hasChildren && (
-                  <span
-                    className="rounded-full px-2 py-0.5 text-xs font-medium"
-                    style={{
-                      backgroundColor: `${color}20`,
-                      color,
-                    }}
-                  >
-                    {node.children.length} alt kategori
-                  </span>
-                )}
-              </div>
-              <p className="mt-0.5 text-xs text-text-muted">
-                <span className="font-medium text-text-primary">{productCount}</span> ürün
-                {hasChildren && level === 0 && (
-                  <span className="text-text-muted"> ({countProducts(node) - (node._count?.products ?? 0)} alt)</span>
-                )}
-                {node.description && (
-                  <>
-                    <span className="mx-1.5 text-text-muted">•</span>
-                    <span>{node.description}</span>
-                  </>
-                )}
-              </p>
-            </div>
-
-            {/* Actions */}
-            <div className="flex flex-shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover/card:opacity-100">
-              <button
-                type="button"
-                onClick={() => openCreate(node.id)}
-                className="rounded-lg p-2 text-text-muted transition-all hover:scale-110 hover:bg-card hover:text-brand"
-                title="Alt kategori ekle"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => openEdit(node)}
-                className="rounded-lg p-2 text-text-muted transition-all hover:scale-110 hover:bg-card hover:text-info"
-                title="Düzenle"
-              >
-                <Edit3 className="h-4 w-4" />
-              </button>
-              <button
-                type="button"
-                onClick={() => handleDelete(node.id, node.name, (node._count?.products ?? 0) > 0)}
-                className="rounded-lg p-2 text-text-muted transition-all hover:scale-110 hover:bg-destructive/10 hover:text-destructive"
-                title="Sil"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Children (alt kategoriler) */}
-          {hasChildren && isExpanded && (
-            <div className="space-y-2 border-t border-border/40 bg-background/30 p-2 md:p-3">
-              {node.children.map((c) => <CategoryCard key={c.id} node={c} level={level + 1} />)}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
+  // Asimetrik grid için featured ilk kart + kalan grid
+  const [featured, ...restRoots] = filteredRoots;
+  const restGrid = restRoots;
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex flex-col gap-2">
-          <h1 className="flex items-center gap-3 font-display text-3xl font-bold text-text-primary">
-            <FolderTree className="h-7 w-7 text-brand" />
-            Kategoriler
-          </h1>
-          <p className="text-sm text-text-secondary">
-            Ürünlerini hiyerarşik olarak gruplandır.
-          </p>
-        </div>
-        <Button onClick={() => openCreate()}>
-          <Plus className="mr-2 h-4 w-4" />
-          Yeni Kategori
-        </Button>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Card className="overflow-hidden p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10">
-              <FolderTree className="h-5 w-5 text-brand" />
+    <div className="relative min-h-screen bg-kraft-paper-light">
+      <div className="space-y-8 p-1">
+        {/* ============ HEADER (samimi) ============ */}
+        <header className="flex flex-col gap-6 border-b border-stone-200 pb-8 md:flex-row md:items-end md:justify-between">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-900">
+              <Hash className="h-3 w-3" />
+              RAF KATALOĞU
             </div>
-            <div>
-              <p className="text-xs text-text-muted">Ana Kategori</p>
-              <p className="font-display text-2xl font-bold text-text-primary">{stats.roots}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="overflow-hidden p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-info/10">
-              <ChevronRight className="h-5 w-5 text-info" />
-            </div>
-            <div>
-              <p className="text-xs text-text-muted">Alt Kategori</p>
-              <p className="font-display text-2xl font-bold text-text-primary">{stats.subs}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="overflow-hidden p-4">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-success/10">
-              <Package className="h-5 w-5 text-success" />
-            </div>
-            <div>
-              <p className="text-xs text-text-muted">Toplam Ürün</p>
-              <p className="font-display text-2xl font-bold text-text-primary">{stats.products}</p>
-            </div>
-          </div>
-        </Card>
-        <Card className="overflow-hidden p-4">
-          <div className="flex items-center gap-3">
-            <div className={cn(
-              'flex h-10 w-10 items-center justify-center rounded-xl',
-              stats.orphans > 0 ? 'bg-warning/10' : 'bg-muted',
-            )}>
-              <AlertTriangle />
-            </div>
-            <div>
-              <p className="text-xs text-text-muted">Yetim Kategori</p>
-              <p className={cn(
-                'font-display text-2xl font-bold',
-                stats.orphans > 0 ? 'text-warning' : 'text-text-primary',
-              )}>
-                {stats.orphans}
-              </p>
-            </div>
-          </div>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader className="space-y-3">
-          <div className="flex items-center justify-between gap-3">
-            <CardTitle className="flex items-center gap-2">
-              <FolderTree className="h-4 w-4 text-brand" />
-              Kategori Hiyerarşisi ({categories.length})
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              {selectedIds.size > 0 && (
-                <>
-                  <span className="text-xs text-text-muted">{selectedIds.size} seçili</span>
-                  <Button variant="outline" size="sm" onClick={handleBulkDelete}>
-                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                    Toplu Sil
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
-                    İptal
-                  </Button>
-                </>
-              )}
-            </div>
+            <h1 className="font-display text-4xl font-black tracking-tight text-stone-900 md:text-5xl">
+              Depo <span className="text-brand">Raflarımız</span>
+            </h1>
+            <p className="max-w-xl text-base text-stone-600">
+              Malzemelerini raf raf düzenledik. Bir rafa{' '}
+              <span className="font-semibold text-stone-800">tıkla</span>, altındaki parçaları gör.
+            </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-muted" />
-              <input
-                type="text"
-                placeholder="Kategori ara..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-9 w-full rounded-lg border border-border bg-background pl-9 pr-3 text-sm placeholder:text-text-muted focus:border-brand focus:outline-none"
-              />
-            </div>
-            <Button variant="outline" size="sm" onClick={selectAll}>
-              {selectedIds.size === categories.length ? 'Seçimi Kaldır' : 'Tümünü Seç'}
-            </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            {selectedIds.size > 0 && (
+              <Button variant="outline" onClick={handleBulkDelete} className="border-stone-300">
+                <Trash2 className="mr-2 h-4 w-4" />
+                {selectedIds.size} Sil
+              </Button>
+            )}
             <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setExpanded(new Set(categories.map((c) => c.id)))}
+              onClick={openCreate}
+              className="bg-gradient-to-r from-brand to-brand-light shadow-lg shadow-brand/30 hover:shadow-xl hover:shadow-brand/40"
             >
-              Tümünü Aç
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setExpanded(new Set())}>
-              Tümünü Kapat
+              <Plus className="mr-2 h-4 w-4" />
+              Yeni Tezgah
             </Button>
           </div>
-        </CardHeader>
+        </header>
 
-        <CardContent>
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-text-muted" />
-            </div>
-          ) : categories.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <div className="rounded-full bg-card p-3">
-                <FolderTree className="h-6 w-6 text-text-muted" />
-              </div>
-              <p className="mt-3 text-sm text-text-secondary">Henüz kategori yok</p>
-              <p className="text-xs text-text-muted">Yeni kategori ekleyerek başla</p>
-            </div>
-          ) : treeSearched.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12 text-center">
-              <Search className="h-8 w-8 text-text-muted" />
-              <p className="mt-3 text-sm text-text-secondary">Sonuç bulunamadı</p>
-              <p className="text-xs text-text-muted">"{search}" için eşleşen kategori yok</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {treeSearched.map((node) => <CategoryCard key={node.id} node={node} />)}
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        {/* ============ STATS (BigPanel) ============ */}
+        <section className="grid grid-cols-1 gap-5 md:grid-cols-3">
+          <KpiPanel
+            label="Ana Raf"
+            value={stats.roots}
+            emoji="🏷️"
+            tone="warning"
+            compact
+          />
+          <KpiPanel
+            label="Alt Raf"
+            value={stats.subs}
+            emoji="🗄️"
+            tone="info"
+            compact
+          />
+          <KpiPanel
+            label="Toplam Parça"
+            value={stats.products}
+            emoji="🔩"
+            tone="positive"
+            compact
+          />
+        </section>
 
-      {/* Create/Edit Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 p-4 backdrop-blur">
-          <Card className="w-full max-w-2xl">
-            <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>
-                {editingCategory ? 'Kategoriyi Düzenle' : 'Yeni Kategori'}
-                {form.parentId && (
-                  <span className="ml-2 text-sm font-normal text-text-muted">
-                    (alt kategori olarak)
-                  </span>
-                )}
-              </CardTitle>
-              <button
-                onClick={() => setModalOpen(false)}
-                className="rounded-md p-1 text-text-muted hover:bg-card hover:text-text-primary"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Kategori adı *</Label>
-                  <Input
-                    id="name"
-                    placeholder="Örn: NYM Antistatik Kablolar"
-                    value={form.name}
-                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Açıklama (opsiyonel)</Label>
-                  <Input
-                    id="description"
-                    placeholder="Kısa açıklama"
-                    value={form.description}
-                    onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="parentId">Üst Kategori (opsiyonel)</Label>
-                  <select
-                    id="parentId"
-                    value={form.parentId}
-                    onChange={(e) => setForm({ ...form, parentId: e.target.value })}
-                    className="h-10 w-full rounded-lg border border-border bg-card px-3 text-sm focus:border-brand focus:outline-none"
-                  >
-                    <option value="">— Ana Kategori —</option>
-                    {categories
-                      .filter((c) => c.id !== editingCategory?.id)
-                      .map((c) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                  </select>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>İkon</Label>
-                  <div className="grid grid-cols-6 gap-2 sm:grid-cols-9">
-                    {ICON_OPTIONS.map((opt) => {
-                      const IconComp = ICON_MAP[opt.value];
-                      return (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          onClick={() => setForm({ ...form, icon: opt.value })}
-                          title={opt.label}
-                          className={cn(
-                            'flex h-10 flex-col items-center justify-center gap-0.5 rounded-md border text-xs transition-all',
-                            form.icon === opt.value
-                              ? 'border-brand bg-brand/10 text-brand shadow-glow-brand'
-                              : 'border-border bg-background-surface text-text-muted hover:border-brand/40 hover:text-text-primary',
-                          )}
-                        >
-                          {IconComp && <IconComp className="h-4 w-4" />}
-                          <span className="text-[10px]">{opt.label}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Renk</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {COLOR_OPTIONS.map((c) => (
-                      <button
-                        key={c.value}
-                        type="button"
-                        onClick={() => setForm({ ...form, color: c.value })}
-                        title={c.label}
-                        className={cn(
-                          'h-8 w-8 rounded-full transition-all',
-                          form.color === c.value ? 'ring-2 ring-ring ring-offset-2 ring-offset-background' : '',
-                        )}
-                        style={{ backgroundColor: c.value }}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
-                    İptal
-                  </Button>
-                  <Button type="submit" disabled={submitting || !form.name.trim()}>
-                    {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    {editingCategory ? 'Güncelle' : 'Oluştur'}
-                  </Button>
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+        {/* ============ SEARCH ============ */}
+        <div className="relative max-w-lg">
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-500" />
+          <Input
+            placeholder="Raf ara..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-12 rounded-full border-stone-300 bg-white pl-11 text-base shadow-sm focus:border-brand focus:ring-brand"
+          />
         </div>
-      )}
+
+        {/* ============ GRID — Asimetrik ============ */}
+        {loading ? (
+          <div className="flex h-48 items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-brand" />
+          </div>
+        ) : filteredRoots.length === 0 ? (
+          <EmptyState search={search} />
+        ) : (
+          <>
+            {/* FEATURED (ilk ve büyük kart) */}
+            {featured && (
+              <FeaturedCategoryCard
+                category={featured}
+                subCategories={childrenMap.get(featured.id) ?? []}
+                isSelected={selectedIds.has(featured.id)}
+                onToggleSelect={() => toggleSelect(featured.id)}
+                onDelete={() => handleDelete(featured.id, featured.name)}
+              />
+            )}
+
+            {/* REGULAR GRID (kalan) */}
+            {restGrid.length > 0 && (
+              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {restGrid.map((cat, i) => (
+                  <CategoryShowcaseCard
+                    key={cat.id}
+                    category={cat}
+                    subCategories={childrenMap.get(cat.id) ?? []}
+                    isSelected={selectedIds.has(cat.id)}
+                    onToggleSelect={() => toggleSelect(cat.id)}
+                    onDelete={() => handleDelete(cat.id, cat.name)}
+                    index={i}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ============ MODAL ============ */}
+        {modalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-stone-900/60 p-4 backdrop-blur-md"
+            onClick={() => setModalOpen(false)}
+          >
+            <Card
+              className="w-full max-w-lg border-stone-200 bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between border-b border-stone-200 px-6 py-4">
+                <h2 className="font-display text-xl font-bold text-stone-900">
+                  {editingCategory ? 'Rafı Düzenle' : 'Yeni Raf Aç'}
+                </h2>
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(false)}
+                  className="rounded-lg p-1 text-stone-500 hover:bg-stone-100 hover:text-stone-900"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <CardContent className="pt-6">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div>
+                    <Label htmlFor="name" className="text-stone-700">Raf Adı</Label>
+                    <Input
+                      id="name"
+                      value={form.name}
+                      onChange={(e) => setForm({ ...form, name: e.target.value })}
+                      placeholder="Ör: Aydınlatma"
+                      autoFocus
+                      className="border-stone-300"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="desc" className="text-stone-700">Not (opsiyonel)</Label>
+                    <Input
+                      id="desc"
+                      value={form.description}
+                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      placeholder="Kısa açıklama"
+                      className="border-stone-300"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="parent" className="text-stone-700">Üst Raf (opsiyonel)</Label>
+                    <select
+                      id="parent"
+                      value={form.parentId}
+                      onChange={(e) => setForm({ ...form, parentId: e.target.value })}
+                      className="flex h-10 w-full rounded-md border border-stone-300 bg-white px-3 py-2 text-sm"
+                    >
+                      <option value="">— Ana Raf</option>
+                      {rootCategories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <Label className="text-stone-700">Simge</Label>
+                    <div className="grid grid-cols-7 gap-2">
+                      {ICON_OPTIONS.map((opt) => {
+                        const Icon = (ICON_MAP[opt.value] ?? Plug) as LucideIcon;
+                        const isActive = form.icon === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setForm({ ...form, icon: opt.value })}
+                            className={cn(
+                              'flex h-10 w-10 items-center justify-center rounded-lg border transition-all',
+                              isActive
+                                ? 'border-brand bg-brand/10 text-brand'
+                                : 'border-stone-300 text-stone-600 hover:border-brand/40',
+                            )}
+                            title={opt.label}
+                          >
+                            <Icon className="h-5 w-5" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div>
+                    <Label className="text-stone-700">Renk</Label>
+                    <div className="grid grid-cols-6 gap-2">
+                      {COLOR_OPTIONS.map((opt) => {
+                        const isActive = form.color === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => setForm({ ...form, color: opt.value })}
+                            className={cn(
+                              'h-9 w-full rounded-lg border-2 transition-all',
+                              isActive
+                                ? 'scale-110 border-stone-900 shadow-md'
+                                : 'border-transparent hover:scale-105',
+                            )}
+                            style={{ backgroundColor: opt.value }}
+                            title={opt.label}
+                          />
+                        );
+                      })}
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setModalOpen(false)}
+                      disabled={submitting}
+                      className="border-stone-300"
+                    >
+                      İptal
+                    </Button>
+                    <Button
+                      type="submit"
+                      disabled={submitting}
+                      className="bg-gradient-to-r from-brand to-brand-light"
+                    >
+                      {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      {editingCategory ? 'Güncelle' : 'Rafı Aç'}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
 
-// Yardımcı: stats card'ta AlertTriangle için stub
-function AlertTriangle() {
-  return <span>⚠</span>;
+// =================================================================
+// Featured Card — İlk ve en büyük raf (taşan texture + hero)
+// =================================================================
+function FeaturedCategoryCard({
+  category,
+  subCategories,
+  isSelected,
+  onToggleSelect,
+  onDelete,
+}: {
+  category: Category;
+  subCategories: Category[];
+  isSelected: boolean;
+  onToggleSelect: () => void;
+  onDelete: () => void;
+}) {
+  const palette = getPalette(category.slug);
+  const texture = TEXTURE_MAP[category.slug];
+  const Icon = (ICON_MAP[category.icon ?? 'plug'] ?? Plug) as LucideIcon;
+  const totalProducts =
+    (category._count?.products ?? 0) +
+    subCategories.reduce((acc, c) => acc + (c._count?.products ?? 0), 0);
+
+  return (
+    <Link
+      href={`/categories/${category.slug}`}
+      className={cn(
+        'group/feat relative block overflow-hidden rounded-3xl border-2 transition-all duration-500',
+        'shadow-kraft hover:shadow-kraft-hover hover:-translate-y-1',
+        isSelected
+          ? 'border-brand ring-4 ring-brand/20'
+          : 'border-stone-200 hover:border-stone-300',
+      )}
+      style={{
+        background: `linear-gradient(135deg, ${palette.bg} 0%, white 50%, ${palette.bg} 100%)`,
+      }}
+    >
+      {/* Background blob — animasyonlu */}
+      <div
+        className="pointer-events-none absolute -right-20 -z-10 w-96 animate-blob-float rounded-full opacity-30 blur-3xl"
+        style={{ backgroundColor: palette.primary }}
+      />
+      <div
+        className="pointer-events-none absolute -bottom-32 -left-20 -z-10 h-72 w-72 animate-blob-float rounded-full opacity-20 blur-3xl"
+        style={{
+          backgroundColor: palette.secondary,
+          animationDelay: '2s',
+        }}
+      />
+
+      <div className="grid grid-cols-1 gap-6 p-6 md:grid-cols-[1fr_280px] md:p-10">
+          {/* TEXT BLOCK */}
+          <div className="flex flex-col justify-between gap-6">
+            {/* Sticker — featured */}
+            <div className="flex items-center gap-2">
+              <div
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider shadow-sm"
+                style={{
+                  backgroundColor: palette.primary,
+                  color: 'white',
+                }}
+              >
+                <Sparkles className="h-3 w-3" />
+                Öne Çıkan Raf
+              </div>
+              <span className="font-mono text-xs text-stone-500">
+                #{category.slug.toUpperCase()}
+              </span>
+            </div>
+
+            <div>
+              <div
+                className="mb-3 inline-flex items-center gap-2 text-sm font-semibold"
+                style={{ color: palette.accent }}
+              >
+                <span className="text-2xl">{palette.emoji}</span>
+                <span>{palette.tagline}</span>
+              </div>
+              <h2
+                className="font-display text-5xl font-black leading-[0.95] tracking-tight transition-all md:text-6xl"
+                style={{ color: palette.accent }}
+              >
+                {category.name}
+              </h2>
+              {category.description && (
+                <p className="mt-3 max-w-md text-base text-stone-600">{category.description}</p>
+              )}
+            </div>
+
+            {/* Stats row */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm shadow-sm"
+                style={{
+                  backgroundColor: 'white',
+                  color: palette.accent,
+                }}
+              >
+                <ChevronRight className="h-4 w-4" />
+                <span>
+                  <span className="font-bold">{subCategories.length}</span>{' '}
+                  <span className="text-stone-500">raf</span>
+                </span>
+              </div>
+              <div
+                className="inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm shadow-sm"
+                style={{
+                  backgroundColor: 'white',
+                  color: palette.accent,
+                }}
+              >
+                <Package className="h-4 w-4" />
+                <span>
+                  <span className="font-bold">{totalProducts}</span>{' '}
+                  <span className="text-stone-500">parça</span>
+                </span>
+              </div>
+
+              <div className="ml-auto hidden items-center gap-1 text-sm font-bold text-stone-700 md:flex">
+                Rafa Git
+                <ArrowRight className="h-4 w-4 transition-transform group-hover/feat:translate-x-1" />
+              </div>
+            </div>
+          </div>
+
+          {/* VISUAL BLOCK — taşan texture */}
+          <div className="relative hidden h-56 md:block">
+            {texture ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                {/* Glow halo */}
+                <div
+                  className="absolute h-48 w-48 rounded-full blur-2xl opacity-60"
+                  style={{ backgroundColor: palette.primary }}
+                />
+                {/* Texture — taşıyor */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={texture}
+                  alt={category.name}
+                  className="relative h-64 w-64 object-contain drop-shadow-2xl transition-transform duration-700 group-hover/feat:scale-110 group-hover/feat:rotate-3"
+                  style={{ filter: 'drop-shadow(0 12px 24px rgba(0,0,0,0.2))' }}
+                />
+              </div>
+            ) : (
+              <div className="flex h-full items-center justify-center">
+                <div
+                  className="flex h-40 w-40 items-center justify-center rounded-3xl shadow-2xl transition-transform duration-700 group-hover/feat:scale-110 group-hover/feat:rotate-6"
+                  style={{
+                    background: `linear-gradient(135deg, ${palette.primary}, ${palette.secondary})`,
+                    boxShadow: `0 20px 40px -10px ${palette.primary}80`,
+                  }}
+                >
+                  <Icon className="h-20 w-20 text-white" style={{ strokeWidth: 1.5 }} />
+                </div>
+              </div>
+            )}
+
+            {/* Köşe pul (corner stamp) */}
+            <div
+              className="absolute -right-2 -top-2 hidden h-16 w-16 rotate-12 items-center justify-center rounded-full shadow-lg md:flex"
+              style={{ backgroundColor: palette.primary, color: 'white' }}
+            >
+              <div className="text-center leading-tight">
+                <div className="text-[9px] font-bold uppercase tracking-wider">Yeni</div>
+                <div className="text-[8px] opacity-90">sezon</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      {/* Bottom accent bar */}
+      <div
+        className="h-1.5 w-full"
+        style={{
+          background: `linear-gradient(90deg, ${palette.primary}, ${palette.secondary}, ${palette.primary})`,
+        }}
+      />
+
+      {/* Action buttons — overlay */}
+      <div className="absolute right-4 top-4 z-10 flex items-center gap-1.5">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            onToggleSelect();
+          }}
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 text-stone-500 backdrop-blur transition-all hover:scale-110 hover:text-brand shadow-sm"
+        >
+          {isSelected ? <CheckSquare className="h-4 w-4 text-brand" /> : <Square className="h-4 w-4" />}
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            onDelete();
+          }}
+          className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/90 text-stone-500 backdrop-blur transition-all hover:scale-110 hover:bg-red-50 hover:text-red-600 shadow-sm"
+        >
+          <Trash2 className="h-4 w-4" />
+        </button>
+      </div>
+    </Link>
+  );
+}
+
+// =================================================================
+// Showcase Card — Kalan raflar (küçük kart)
+// =================================================================
+function CategoryShowcaseCard({
+  category,
+  subCategories,
+  isSelected,
+  onToggleSelect,
+  onDelete,
+  index,
+}: {
+  category: Category;
+  subCategories: Category[];
+  isSelected: boolean;
+  onToggleSelect: () => void;
+  onDelete: () => void;
+  index: number;
+}) {
+  const palette = getPalette(category.slug);
+  const texture = TEXTURE_MAP[category.slug];
+  const Icon = (ICON_MAP[category.icon ?? 'plug'] ?? Plug) as LucideIcon;
+  const totalProducts =
+    (category._count?.products ?? 0) +
+    subCategories.reduce((acc, c) => acc + (c._count?.products ?? 0), 0);
+
+  return (
+    <Link
+      href={`/categories/${category.slug}`}
+      className={cn(
+        'group/shop relative flex flex-col overflow-hidden rounded-2xl transition-all duration-300',
+        'border border-stone-200 bg-white shadow-kraft hover:shadow-kraft-hover hover:-translate-y-1',
+        isSelected && 'border-brand ring-4 ring-brand/20',
+      )}
+      style={{
+        animationDelay: `${index * 60}ms`,
+      }}
+    >
+      {/* Visual header — texture/boyancy taşıyor */}
+      <div
+        className="relative flex h-36 items-center justify-center overflow-visible"
+        style={{
+          background: `linear-gradient(135deg, ${palette.bg}, white)`,
+        }}
+      >
+        {/* Background pattern */}
+        <div
+          className="absolute inset-0 opacity-30"
+          style={{
+            backgroundImage: `radial-gradient(circle at 20% 50%, ${palette.primary}40, transparent 40%)`,
+          }}
+        />
+
+        {texture ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={texture}
+            alt={category.name}
+            className="relative h-32 w-32 -translate-y-2 object-contain transition-transform duration-500 group-hover/shop:scale-110 group-hover/shop:-translate-y-3"
+            style={{ filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.15))' }}
+          />
+        ) : (
+          <div
+            className="flex h-20 w-20 items-center justify-center rounded-2xl shadow-lg transition-transform duration-500 group-hover/shop:scale-110 group-hover/shop:rotate-6"
+            style={{
+              background: `linear-gradient(135deg, ${palette.primary}, ${palette.secondary})`,
+              boxShadow: `0 8px 24px -4px ${palette.primary}60`,
+            }}
+          >
+            <Icon className="h-10 w-10 text-white" style={{ strokeWidth: 1.8 }} />
+          </div>
+        )}
+
+        {/* Raf numarası — sol üst köşe pul */}
+        <div
+          className="absolute left-3 top-3 flex h-9 w-9 items-center justify-center rounded-lg font-mono text-xs font-bold shadow-md"
+          style={{
+            backgroundColor: palette.accent,
+            color: 'white',
+          }}
+        >
+          #{String(index + 2).padStart(2, '0')}
+        </div>
+
+        {/* Emoji badge — sağ üst */}
+        <div className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white text-base shadow-sm">
+          {palette.emoji}
+        </div>
+      </div>
+
+      {/* Body */}
+      <div className="flex flex-1 flex-col p-4">
+        <div
+          className="mb-1 text-[10px] font-bold uppercase tracking-wider"
+          style={{ color: palette.primary }}
+        >
+          {palette.tagline}
+        </div>
+        <h3 className="line-clamp-1 font-display text-lg font-bold text-stone-900 transition-colors group-hover/shop:text-stone-700">
+          {category.name}
+        </h3>
+
+        <div className="mt-auto flex items-center justify-between border-t border-stone-200 pt-3 text-xs">
+          <div className="flex items-center gap-1 text-stone-600">
+            <ChevronRight className="h-3 w-3" />
+            <span className="font-bold text-stone-900">{subCategories.length}</span>
+            <span>raf</span>
+          </div>
+          <div className="flex items-center gap-1 text-stone-600">
+            <Package className="h-3 w-3" />
+            <span className="font-bold text-stone-900">{totalProducts}</span>
+            <span>parça</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom accent — ince */}
+      <div className="h-1 w-full" style={{ backgroundColor: palette.primary }} />
+
+      {/* Hover overlay — hover'da "Rafa Git" */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-stone-900/0 opacity-0 transition-all duration-300 group-hover/shop:bg-stone-900/40 group-hover/shop:opacity-100">
+        <span className="rounded-full bg-white px-4 py-2 text-sm font-bold text-stone-900 shadow-lg">
+          Rafa Git →
+        </span>
+      </div>
+
+      {/* Action buttons */}
+      <div className="absolute right-2 top-2 z-10 flex flex-col gap-1 opacity-0 transition-opacity group-hover/shop:opacity-100">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            onToggleSelect();
+          }}
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-stone-500 backdrop-blur shadow-sm hover:text-brand"
+        >
+          {isSelected ? <CheckSquare className="h-3.5 w-3.5 text-brand" /> : <Square className="h-3.5 w-3.5" />}
+        </button>
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            onDelete();
+          }}
+          className="flex h-7 w-7 items-center justify-center rounded-lg bg-white/90 text-stone-500 backdrop-blur shadow-sm hover:bg-red-50 hover:text-red-600"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </Link>
+  );
+}
+
+// =================================================================
+// Empty State — Samimi
+// =================================================================
+function EmptyState({ search }: { search: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-stone-300 bg-white/60 px-8 py-16 text-center">
+      <div className="mb-4 text-7xl opacity-50">{search ? '🔍' : '🏗️'}</div>
+      <h3 className="font-display text-xl font-bold text-stone-700">
+        {search ? 'Eşleşen raf bulunamadı' : 'Depo Henüz Boş'}
+      </h3>
+      <p className="mt-2 max-w-md text-sm text-stone-500">
+        {search
+          ? `"${search}" için bir sonuç yok. Farklı bir terim dene.`
+          : 'İlk rafını aç ve malzeme kategorilerini düzenlemeye başla.'}
+      </p>
+    </div>
+  );
 }

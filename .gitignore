@@ -95,6 +95,13 @@ docker_redis_data/
 docker_minio_data/
 # ignore the temp .env copy under packages/database (it mirrors workspace root .env)
 packages/database/.env
+
+# UAS (Universal Agent System) — config tracked, runtime state ignored
+.uas/state/
+.uas/cache/
+.uas/*.log
+.uas/*.lock
+.uas/sessions/
 # OS / editor
 *.swp
 *.swo

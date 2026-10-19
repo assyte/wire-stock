@@ -147,6 +147,155 @@ export class ProductsService {
     return product;
   }
 
+  /**
+   * Zenginleştirilmiş barkod lookup — /scan sayfası için
+   * Stok bilgisi, raf konumu, son hareket dahil
+   */
+  async lookupByBarcode(organizationId: string, barcode: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { organizationId, barcode, deletedAt: null },
+      include: {
+        category: { select: { id: true, name: true, color: true, slug: true } },
+        brand: { select: { id: true, name: true } },
+        unit: { select: { id: true, name: true, shortName: true } },
+        stockLevels: {
+          include: {
+            shelf: {
+              include: {
+                warehouse: { select: { id: true, name: true, code: true } },
+              },
+            },
+          },
+        },
+        stockMovements: {
+          take: 1,
+          orderBy: { createdAt: 'desc' },
+          select: { id: true, type: true, quantity: true, createdAt: true },
+        },
+      },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Bu barkoda sahip ürün bulunamadı');
+    }
+
+    // Stok toplamı + raf bazlı dağılım
+    const totalStock = product.stockLevels.reduce(
+      (sum, sl) => sum + Number(sl.quantity),
+      0,
+    );
+    const reserved = product.stockLevels.reduce(
+      (sum, sl) => sum + Number(sl.reserved ?? 0),
+      0,
+    );
+
+    const shelfDistribution = product.stockLevels
+      .filter((sl) => Number(sl.quantity) > 0)
+      .map((sl) => ({
+        shelfId: sl.shelfId,
+        shelfCode: sl.shelf.code,
+        shelfName: sl.shelf.name,
+        warehouseName: sl.shelf.warehouse.name,
+        quantity: Number(sl.quantity),
+      }));
+
+    return {
+      id: product.id,
+      sku: product.sku,
+      barcode: product.barcode,
+      name: product.name,
+      description: product.description,
+      brand: product.brand,
+      model: product.specifications as any, // JSON alanı
+      category: product.category,
+      unit: product.unit,
+      purchasePrice: Number(product.purchasePrice),
+      salePrice: Number(product.salePrice),
+      minStock: Number(product.minStock),
+      criticalStock: Number(product.criticalStock),
+      stock: {
+        totalQuantity: totalStock,
+        available: totalStock - reserved,
+        shelfDistribution,
+      },
+      lastMovement: product.stockMovements[0] ?? null,
+    };
+  }
+
+  /**
+   * EAN-13 formatında barkod üret ve ürüne kaydet.
+   * 869 (Türkiye GS1 prefix) ile başlar.
+   */
+  async generateBarcode(organizationId: string, productId: string) {
+    const product = await this.prisma.product.findFirst({
+      where: { id: productId, organizationId, deletedAt: null },
+    });
+
+    if (!product) {
+      throw new NotFoundException('Ürün bulunamadı');
+    }
+
+    // Mevcut barkod varsa onu döndür (idempotent)
+    if (product.barcode && /^\d{13}$/.test(product.barcode)) {
+      return {
+        productId: product.id,
+        productName: product.name,
+        barcode: product.barcode,
+        format: 'EAN-13',
+        isNew: false,
+      };
+    }
+
+    // Benzersiz barkod üret (çakışma olabilir, kontrol et)
+    let barcode: string = '';
+    let attempts = 0;
+    const maxAttempts = 10;
+    while (attempts < maxAttempts) {
+      barcode = this.generateEAN13();
+      const existing = await this.prisma.product.findFirst({
+        where: { organizationId, barcode },
+        select: { id: true },
+      });
+      if (!existing) break;
+      attempts++;
+    }
+
+    if (!barcode) {
+      throw new Error('Benzersiz barkod üretilemedi');
+    }
+
+    await this.prisma.product.update({
+      where: { id: productId },
+      data: { barcode },
+    });
+
+    return {
+      productId: product.id,
+      productName: product.name,
+      barcode,
+      format: 'EAN-13',
+      isNew: true,
+    };
+  }
+
+  /**
+   * EAN-13 checksum'lı 13 haneli barkod üret.
+   */
+  private generateEAN13(): string {
+    // 869 = Türkiye GS1 prefix
+    const random9 = Array.from(
+      { length: 9 },
+      () => Math.floor(Math.random() * 10),
+    ).join('');
+    const base12 = '869' + random9;
+    const sum = base12
+      .split('')
+      .map(Number)
+      .reduce((acc, digit, idx) => acc + digit * (idx % 2 === 0 ? 1 : 3), 0);
+    const checksum = (10 - (sum % 10)) % 10;
+    return base12 + checksum;
+  }
+
   async create(organizationId: string, dto: CreateProductDto) {
     // SKU kontrolü
     const existing = await this.prisma.product.findUnique({
