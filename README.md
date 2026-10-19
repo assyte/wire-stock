@@ -1,6 +1,6 @@
 # ⚡ WireStock
 
-> **Modern, fast, and comprehensive inventory & warehouse management SaaS platform built for the electrical & electronics industry.**
+> **Modern, fast inventory & warehouse management platform built specifically for the Turkish electrical & electronics industry. Single-binary desktop install, offline-first.**
 
 [![License](https://img.shields.io/badge/license-UNLICENSED-red.svg)](LICENSE)
 [![Node](https://img.shields.io/badge/node-%3E%3D20.0.0-brightgreen.svg)](https://nodejs.org)
@@ -17,7 +17,9 @@
 
 ## 🎯 About
 
-WireStock is a **multi-tenant SaaS platform** designed specifically for the electrical & electronics supply chain — electrical contractors, retailers, wholesalers, panel builders, and field service teams. It replaces error-prone paper ledgers and fragmented spreadsheets with a single, fast, intuitive system that scales from a single shop to multi-branch operations.
+WireStock is a **desktop application** designed specifically for the Turkish electrical & electronics supply chain — electrical contractors, retailers, wholesalers, panel builders, and field service teams. It replaces error-prone paper ledgers and fragmented spreadsheets with a single, fast, intuitive system that runs on a single shop's computer.
+
+**Why desktop?** Turkish small business owners prefer one-time licenses over monthly subscriptions, and they need to work even when their internet is down. WireStock runs offline with all features.
 
 ### Who is it for?
 

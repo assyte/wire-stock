@@ -7,25 +7,50 @@ Bu proje [Semantic Versioning](https://semver.org/) takip eder.
 
 ---
 
-## [Unreleased] — v1.1.1-alpha (Planlanıyor: 20 Ekim 2026)
+## [Unreleased] — v1.2.0-desktop-alpha (Planlanıyor: 20 Ekim 2026)
 
-### 🎯 Sprint: Barkod MVP + Müşteri Demo Hazırlığı
+### 🎯 Sprint: Masaüstü Uygulaması (Electron MVP)
 
-### Eklenecek
-- Barkod üretim sistemi (EAN-13 formatında 13 haneli kod)
-- Etiket basma UI (PNG indirme + yazdırma)
-- Barkod okuma (kamera + klavye fallback)
-- `/scan` sayfası — hızlı tüketim workflow
-- Sidebar'a "Tara" linki (Stok bölümü)
-- Demo seed: 30+ gerçek Türk elektrik markası
-  - Kablo: Öznür NYM, Hes Hacılar, 2M, Türk Prysmian
-  - Anahtar/Priz: Viko, Schneider, Legrand, Makel, Bemis
-  - Sigorta/Pano: Schneider, Legrand, ABB, Siemens
-  - Klemens: Mutlusan, Klemsan
-- Demo script (müşteriye 10dk akış)
+### Planlanan
+- Electron wrapper (`apps/desktop/`)
+- NestJS embedded (main process'te)
+- Next.js static export
+- SQLite database (Prisma)
+- Tek .exe installer (Windows NSIS)
+- Auto-shutdown (uygulama kapanınca backend kapanır)
 
 ### Hedef Versiyon
-**v1.1.1-alpha** — Pazartesi sabahı
+**v1.2.0-desktop-alpha** — Pazartesi günü
+
+---
+
+## [1.1.1-alpha] — 2026-10-19 ✅
+
+### ✅ Eklenen
+- **Barkod üretim sistemi**:
+  - `POST /products/:id/generate-barcode` — EAN-13 (869 Türkiye prefix)
+  - `GET /products/lookup/:barcode` — zenginleştirilmiş (stok + raf + son hareket)
+  - `lib/ean13.ts` — checksum hesaplama
+- **/scan sayfası** (barkod tarayıcı):
+  - Kamera (html5-qrcode)
+  - Klavye fallback
+  - Ürün kartı (stok + raf + son hareket)
+  - Hızlı tüketim workflow
+  - Ses efektleri (Web Audio API)
+  - Recent scans listesi
+- **BarcodePrintModal**:
+  - Barkod üret (jsbarcode → SVG)
+  - 50×25mm etiket yazdırma
+  - PNG indirme
+- **Demo veriler**:
+  - `seed-barcodes.ts` — 30 ürüne barkod atandı (SIG, NYY, CAT6, NH, MCB, RCD, Viko)
+  - `seed-product-brands.ts` — SKU prefix → marka mapping
+- **Dokümanlar**:
+  - `notes/DEMO_SCRIPT.md` — Müşteri demo akışı (10dk) + 5 satış sorusu
+  - `notes/SPRINT_2026_10_20.md` — Sprint planı
+
+### Sidebar'a eklendi
+- **"Barkod Tara"** linki (Stok bölümünde)
 
 ---
 

@@ -17,43 +17,33 @@
 
 ---
 
-## 📦 Ürün Konfigürasyonu (3 Deployment)
+## 📦 Ürün Konfigürasyonu
+
+**Masaüstü Uygulaması — Ana Dağıtım Modeli**
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│ WIRE-STOCK - 3 DEPLOYMENT MODEL                        │
+│ WIRE-STOCK DESKTOP — Tek .exe İndir, Kur, Çalıştır     │
 ├─────────────────────────────────────────────────────────┤
 │                                                          │
-│  🏠 YEREL (LOCAL) — Kullanıcının kendi PC'si            │
+│  🖥️  TEK BİLGİSAYAR (Desktop) — Ana model              │
 │  ├─ Tek kullanıcı                                       │
-│  ├─ Docker compose + lisans anahtarı                   │
-│  ├─ Offline çalışır                                     │
-│  └─ Lisans: ₺499-1999/ay                               │
+│  ├─ Electron + SQLite (embedded)                        │
+│  ├─ Offline çalışır (internet gereksiz)                 │
+│  ├─ Otomatik güncelleme (electron-updater)              │
+│  └─ Lisans: Tek seferlik + yıllık destek                │
 │                                                          │
-│  ☁️ CLOUD (SaaS) — Bizim sunucumuzda                     │
-│  ├─ Multi-tenant                                        │
-│  ├─ Stripe/iyzico entegrasyonu                          │
-│  ├─ Otomatik güncelleme                                  │
-│  └─ Lisans: ₺799-2999/ay                               │
-│                                                          │
-│  🏢 SELF-HOSTED (Business) — Müşteri kendi sunucusu      │
-│  ├─ Tek tenant (premium)                                │
-│  ├─ Lisans anahtarı + remote validation                 │
-│  ├─ Update: opt-in                                      │
-│  └─ Lisans: ₺999-3999/ay                               │
+│  ☁️  CLOUD (opsiyonel) — Gelecek sprint'lerde            │
+│  ├─ Multi-tenant SaaS                                   │
+│  └─ Bulut yedekleme + birden fazla PC                   │
 │                                                          │
 └─────────────────────────────────────────────────────────┘
 ```
 
-### Fiyatlandırma
-
-| Plan | Yerel | Cloud | Self-hosted |
-|------|-------|-------|-------------|
-| Starter | ₺499 | ₺799 | ₺999 |
-| Pro | ₺999 | ₺1499 | ₺1999 |
-| Enterprise | ₺1999 | ₺2999 | ₺3999 |
-
-**Ödeme:** Aylık / Yıllık (%20 indirim) / Ömür boyu (5 yıl)
+**Ödeme şekilleri (henüz netleşmedi):**
+- Tek seferlik lisans (ömür boyu)
+- Yıllık abonelik (güncellemeler dahil)
+- Aylık abonelik
 
 ---
 
@@ -80,16 +70,16 @@
 
 ```
 ─────────────────────────────────────────────────
-   Q4 2026       Q1 2027      Q2 2027     Q3 2027
+   Q4 2026              Q1 2027              Q2 2027
 ─────────────────────────────────────────────────
-v1.1.0-alpha   v1.1.0-release  v1.2.0-beta  v1.5.0
-v1.1.1-alpha   v1.2.0-alpha
-v1.1.2-alpha
+v1.1.0-alpha ✅      v1.2.0-desktop-beta   v1.5.0
+v1.1.1-alpha ✅     v1.3.0-desktop-release
+v1.2.0-desktop-alpha
 ─────────────────────────────────────────────────
-       │            │            │          │
-       ▼            ▼            ▼          ▼
-   Müşteri     Multi-tenant  Stripe    Marketing
-   keşfi       mimari        entegrasyonu + Scale
+       │                    │                    │
+       ▼                    ▼                    ▼
+   Müşteri keşfi     Tek .exe kurulum    Multi-tenant + Scale
+   + Barkod MVP      (Electron + SQLite) (Cloud opsiyonel)
 ```
 
 ---
